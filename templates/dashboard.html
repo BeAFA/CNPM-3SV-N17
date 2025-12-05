@@ -5,40 +5,24 @@
 <style>
         .container { max-width: 1000px; margin: 30px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 0 15px #ccc; }
         h1 { color: #003057; }
-        .card-container { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
-        .card {
-            flex: 1 1 200px;
-            background: #007bff;
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .card:hover { background: #0056b3; }
+        .card-container { display: flex; gap: 20px; flex-wrap: wrap; }
+        .card { flex: 1 1 300px; background: #007bff; color: white; padding: 30px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; font-size: 18px; }
         .card i { font-size: 40px; margin-bottom: 10px; display: block; }
+        .card:hover { background-color: #0056b3; }
         footer { text-align: center; padding: 15px; color: #555; margin-top: 40px; }
     </style>
 <body>
     <div class="container">
     <h1>Dashboard Khách Hàng</h1>
     <div class="card-container">
-        <div class="card" onclick="alert('Chức năng đặt lịch chưa có')">
-            <i class="fas fa-calendar-check"></i>
-            Đặt Lịch Hẹn
+        <div class="card" onclick="window.location.href='/treatment'">
+            <i class="fas fa-file-medical"></i>
+            Lập Phiếu Điều Trị
         </div>
-        <div class="card" onclick="alert('Chức năng xem dịch vụ chưa có')">
-            <i class="fas fa-tooth"></i>
-            Dịch Vụ
-        </div>
-        <div class="card" onclick="alert('Chức năng thông tin cá nhân chưa có')">
-            <i class="fas fa-user"></i>
-            Thông Tin Cá Nhân
-        </div>
-        <div class="card" onclick="alert('Chức năng liên hệ chưa có')">
-            <i class="fas fa-phone"></i>
-            Liên Hệ
+
+        <div class="card" onclick="window.location.href='/medicine'">
+            <i class="fas fa-pills"></i>
+            Quản Lý Thuốc
         </div>
     </div>
 </div>
