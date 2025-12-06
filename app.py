@@ -149,5 +149,9 @@ def appointment():
 def get_user(user_id):
     return dao.get_user_by_id(user_id)
 
+@app.context_processor
+def detect_role_user():
+    return dict(UserRole=UserRole)
+
 if __name__ == "__main__":
     app.run(debug=True)
