@@ -3,7 +3,10 @@ import math
 import dao
 from __init__ import app, login #, admin
 from flask_login import login_user, current_user, logout_user
-
+import os
+import json
+from datetime import datetime
+from flask import render_template, request, redirect
 from models import User, UserRole
 
 # app = Flask(__name__)
@@ -148,14 +151,8 @@ def appointment():
 @login.user_loader
 def get_user(user_id):
     return dao.get_user_by_id(user_id)
-import os
-import json
-from datetime import datetime
-from flask import render_template, request, redirect
 
-# ======================
-# CASHIER SECTION (THU NGÂN)
-# ======================
+
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 BILLS_FILE = os.path.join(DATA_DIR, "bills.json")
