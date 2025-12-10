@@ -5,7 +5,8 @@ from click import password_option
 
 from models import User #, Category, Product
 from __init__ import app
-
+from models import TaiKhoan, NguoiDung, NhaSi #, Category, Product
+from __init__ import app, db
 # def load_category():
 #     # with open("data/category.json", encoding="utf-8") as f:
 #     #     return json.load(f)
@@ -39,7 +40,8 @@ from __init__ import app
 
 # def count_product():
 #     return Product.query.count()
-
+def load_nhasi():
+    return db.session.query(NguoiDung.Ho, NguoiDung.Ten).join(NhaSi).all()
 def auth_user(gmail, password):
     password = hashlib.md5(password.encode("utf-8")).hexdigest()
     return User.query.filter(User.gmail.__eq__(gmail), User.password.__eq__(password)).first()

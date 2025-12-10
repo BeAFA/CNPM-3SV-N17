@@ -1,4 +1,5 @@
 import json
+import hashlib
 
 from __init__ import db, app
 from sqlalchemy import Column, Integer, Float, String, ForeignKey, Text, DateTime, Enum, Boolean, Date, Time
@@ -7,27 +8,26 @@ from datetime import datetime
 from enum import Enum as RoleEnum
 from flask_login import UserMixin
 
+class Base(db.Model):
+    __abstract__ = True
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(150), nullable=False)
+    created_date = Column(DateTime, default=datetime.now())
+    active = Column(Boolean, default=True)
 
-# class Base(db.Model):
-#     __abstract__ = True
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     name = Column(String(150), nullable=False)
-#     created_date = Column(DateTime, default=datetime.now())
-#     active = Column(Boolean, default=True)
-#
-#     def __str__(self):
-#         return self.name
-#
-# class UserRole(RoleEnum):
-#     USER = 1
-#     ADMIN = 2
-#
-# class User(Base, UserMixin):
-#     gmail = Column(String(150), unique=True, nullable=False)
-#     password = Column(String(150), nullable=False)
-#     avatar = Column(String(300),
-#                     default='https://cdn-icons-png.flaticon.com/128/18388/18388709.png')
-#     role = Column(Enum(UserRole),default=UserRole.USER)
+    def __str__(self):
+        return self.name
+
+class UserRole(RoleEnum):
+    USER = 1
+    ADMIN = 2
+
+class User(Base, UserMixin):
+    gmail = Column(String(150), unique=True, nullable=False)
+    password = Column(String(150), nullable=False)
+    avatar = Column(String(300),
+                    default='https://cdn-icons-png.flaticon.com/128/18388/18388709.png')
+    role = Column(Enum(UserRole),default=UserRole.USER)
 
 
 # class Category(Base):
@@ -192,11 +192,8 @@ if __name__ == "__main__":
         #     for p in products:
         #         db.session.add(Product(**p))
 
-        # import hashlib
-        # password = hashlib.md5("123".encode("utf-8")).hexdigest()
-        # u1 = User(name="Khoa", gmail = "tp281973555k@gmail.com", password =password, role=UserRole.USER)
-        #
-        # db.session.add(u1)
+
+
 
 #---------------------<<THÊM DATA VÀO CSDL NHA KHOA>>---------------------
         # ChuyenMon
@@ -288,5 +285,9 @@ if __name__ == "__main__":
             data = json.loads(f.read())
             for v in data:
                 db.session.add(ChiTietToaThuoc(**v))
+        password = hashlib.md5("123".encode("utf-8")).hexdigest()
+        u1 = User(name="Khoa", gmail="tp281973555k@gmail.com", password=password, role=UserRole.USER)
+
+        db.session.add(u1)
 
         db.session.commit()
