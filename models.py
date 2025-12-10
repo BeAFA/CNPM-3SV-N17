@@ -274,10 +274,4 @@ if __name__ == "__main__":
         u1 = User(name="Khoa", gmail="tp281973555k@gmail.com", password=password, role=UserRole.USER)
 
         db.session.add(u1)
-
-        password = hashlib.md5("123".encode("utf-8")).hexdigest()
-        u1 = User(name="Khoa", gmail="tp281973555k@gmail.com", password=password, role=UserRole.USER)
-
-        db.session.add(u1)
-
         db.session.commit()

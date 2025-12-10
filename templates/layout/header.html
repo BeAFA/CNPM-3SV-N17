@@ -88,8 +88,8 @@
     </div>
 
     <nav>
-        <a href="/"><i class="fa-solid fa-house"></i> Trang chủ</a>
-
+        <a href="/"><i class="fa-solid fa-house"></i>Trang chủ</a>
+        
         <!-- Dropdown dịch vụ -->
         <div class="dropdown">
             <a><i class="fa-solid fa-stethoscope"></i> Dịch vụ</a>
@@ -101,33 +101,39 @@
                 {% endfor %}
             </div>
         </div>
+      
+      
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=tp281973555k@gmail.com" target="_blank"><i
+                class="fa-solid fa-phone"></i>Liên hệ</a>
 
-        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=tp281973555k@gmail.com" target="_blank">
-            <i class="fa-solid fa-phone"></i> Liên hệ
+        {% if current_user.is_authenticated%}
+        <a class="dropdown">
+            <a class=" dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <img src="{{current_user.avatar}}" width="25">
+                Xin chào {{current_user.name}}!
+            </a>
+            <div class="dropdown-menu">
+                <a class="dropdown-item" href="#">Thông tin cá nhân</a>
+                <a class="dropdown-item" href="/logout">Đăng xuất</a>
+            </div>
         </a>
-
-        {% if current_user.is_authenticated %}
-
+        {%else%}
+        <form>
             <a href="/login">
-                <img src="{{ current_user.avatar }}" width="28">
-                Chào {{ current_user.name }}!
+                <button type="button" class="appointment-btn"><i class="fa-solid fa-user-plus"></i>Đăng nhập để đặt lịch
+                    hẹn
+                </button>
             </a>
-
-            <a href="/logout">
-                <img src="https://cdn-icons-png.flaticon.com/128/1286/1286907.png" width="25">
-                Đăng xuất
-            </a>
-
-        {% else %}
-            <a href="/login">
-                <button class="appointment-btn"><i class="fa-solid fa-user-plus"></i> Đăng nhập để đặt lịch hẹn</button>
-            </a>
+        </form>
         {% endif %}
-
         {% if current_user.role == UserRole.USER %}
+        <form>
             <a href="/MakeAppointment.html">
-                <button class="appointment-btn">Đặt lịch hẹn</button>
+                <button type="button" class="appointment-btn">
+                    Đặt lịch hẹn
+                </button>
             </a>
+        </form>
         {% endif %}
     </nav>
 </header>

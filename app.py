@@ -1,7 +1,11 @@
+import hashlib
+from os.path import exists
+import pdb
+
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 import math
 import dao
-from __init__ import app, login
+from __init__ import app, login, db  # , admin
 from flask_login import login_user, current_user, logout_user
 import os
 import json
@@ -48,18 +52,31 @@ def service_detail(ma):
 def register():
     if request.method == "POST":
         name = request.form["name"]
-        email = request.form["email"]
-        username = request.form["username"]
+        gmail = request.form["email"]
         password = request.form["password"]
         confirm = request.form["confirm"]
 
         if password != confirm:
-            return "Xác nhận mật khẩu không khớp!"
-        if username in users:
-            return "Tài khoản đã tồn tại!"
-
-        users[username] = {"name": name, "email": email, "password": password}
-        return redirect("/login")
+            flash("Xác nhận mật khẩu không khớp!", "danger")
+        else:
+            existing_user = User.query.filter(User.gmail == gmail).first()
+            if existing_user:
+                flash("Tài khoản này đã được đăng ký", "danger")
+            else:
+                password = hashlib.md5(password.encode("utf-8")).hexdigest()
+                user = User(
+                    name=name,
+                    gmail=gmail,
+                    password=password
+                )
+                try:
+                    db.session.add(user)
+                    db.session.commit()
+                    flash("Đăng ký thành công! Vui lòng đăng nhập để tiếp tục!", "success")
+                    return redirect('/login')
+                except:
+                    db.session.rollback()
+                    flash("Hệ thống đã bị lỗi! Xin vui lòng thử lại sau", "danger")
     return render_template("register.html")
 
 
@@ -77,7 +94,9 @@ def login_my_user():
         user = dao.auth_user(gmail, password)
 
         if user:
+
             login_user(user)
+
             if user.role == UserRole.ADMIN:
                 return redirect('/dashboard')
             else:
@@ -182,6 +201,7 @@ def appointment():
     return render_template("MakeAppointment.html", services=services, nhasi=nhasi)
 
 
+
 @login.user_loader
 def get_user(user_id):
     return dao.get_user_by_id(user_id)
@@ -236,6 +256,7 @@ def cashier_page():
         return render_template("receipt.html", bill=bill)
 
     return render_template("cashier.html", treatments=treatments, medicines=medicines)
+
 
 
 if __name__ == "__main__":
