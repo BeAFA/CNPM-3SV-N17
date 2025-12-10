@@ -1,32 +1,49 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 import math
 import dao
-from __init__ import app, login #, admin
+from __init__ import app, login
 from flask_login import login_user, current_user, logout_user
 import os
 import json
 from datetime import datetime
-from flask import render_template, request, redirect
 from models import User, UserRole
 
-# app = Flask(__name__)
-# app.secret_key = "secret_key_here"
 
-# Lưu tạm (in-memory)
+# Load dữ liệu dịch vụ từ file JSON
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+SERVICES_FILE = os.path.join(DATA_DIR, "DichVu.json")
+
+with open(SERVICES_FILE, "r", encoding="utf-8") as f:
+    services = json.load(f)
+
+# Lưu tạm trong RAM
 users = {}
-treatments = []   # mỗi item: {"id": int, "service": str, "cost": int, "note": str}
-medicines = []    # mỗi item: {"id": int, "name": str, "dosage": str, "days": int, "unit": str}
+treatments = []
+medicines = []
 
-# Helper để tạo id tự tăng
+# Helper tạo ID tự tăng
 def next_id(collection):
     return (collection[-1]["id"] + 1) if collection else 1
 
+
+# Inject biến services vào tất cả template
+@app.context_processor
+def inject_globals():
+    return dict(services=services, UserRole=UserRole)
+
+
 @app.route("/")
 def home():
-    # Hiển thị home (nếu muốn hiển tên khi đã login có thể truyền session)
-    # username = current_user.username
     page = request.args.get("page")
-    return render_template("home.html", page=page)  # , username=username
+    return render_template("home.html", page=page)
+
+
+@app.route("/service/<ma>")
+def service_detail(ma):
+    service = next((s for s in services if s["MaDichVu"] == ma), None)
+    return render_template("service_detail.html", service=service)
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -45,6 +62,7 @@ def register():
         return redirect("/login")
     return render_template("register.html")
 
+
 @app.route("/login", methods=["GET", "POST"])
 def login_my_user():
     if current_user.is_authenticated:
@@ -52,7 +70,7 @@ def login_my_user():
 
     err_msg = None
 
-    if request.method.__eq__('POST'):
+    if request.method == "POST":
         gmail = request.form.get('gmail')
         password = request.form.get('password')
 
@@ -61,29 +79,33 @@ def login_my_user():
         if user:
             login_user(user)
             if user.role == UserRole.ADMIN:
-                return redirect('/dashboard')  # Trang dành cho admin
+                return redirect('/dashboard')
             else:
-                return redirect('/MakeAppointment.html')  # Trang dành cho quản lý/chuyên môn
-
+                return redirect('/MakeAppointment.html')
         else:
             err_msg = "Tài khoản hoặc mật khẩu không đúng!"
+
     return render_template("login.html", err_msg=err_msg)
+
 
 @app.route("/dashboard")
 def dashboard():
     username = current_user.name
     return render_template("dashboard.html", username=username)
 
+
 @app.route('/logout')
 def logout_my_user():
     logout_user()
     return redirect('/')
 
-# ---------- Treatment (Lập phiếu điều trị) ----------
-@app.route("/treatment", methods=["GET"])
+
+# ------------------- Treatment -------------------
+@app.route("/treatment")
 def treatment():
     username = current_user.name
     return render_template("treatment.html", username=username, treatments=treatments)
+
 
 @app.route("/treatment/add", methods=["POST"])
 def treatment_add():
@@ -94,26 +116,24 @@ def treatment_add():
         cost_val = int(cost)
     except:
         cost_val = 0
-    item = {
-        "id": next_id(treatments),
-        "service": service,
-        "cost": cost_val,
-        "note": note
-    }
+    item = {"id": next_id(treatments), "service": service, "cost": cost_val, "note": note}
     treatments.append(item)
     return redirect('/treatment')
 
-@app.route("/treatment/delete/<int:item_id>", methods=["POST", "GET"])
+
+@app.route("/treatment/delete/<int:item_id>")
 def treatment_delete(item_id):
     global treatments
     treatments = [t for t in treatments if t["id"] != item_id]
     return redirect('/treatment')
 
-# ---------- Medicine (Quản lý thuốc) ----------
-@app.route("/medicine", methods=["GET"])
+
+# ------------------- Medicine -------------------
+@app.route("/medicine")
 def medicine():
     username = current_user.name
     return render_template("medicine.html", username=username, medicines=medicines)
+
 
 @app.route("/medicine/add", methods=["POST"])
 def medicine_add():
@@ -125,48 +145,49 @@ def medicine_add():
         days_val = int(days)
     except:
         days_val = 0
-    item = {
-        "id": next_id(medicines),
-        "name": name,
-        "dosage": dosage,
-        "days": days_val,
-        "unit": unit
-    }
+    item = {"id": next_id(medicines), "name": name, "dosage": dosage, "days": days_val, "unit": unit}
     medicines.append(item)
     return redirect('/medicine')
 
-@app.route("/medicine/delete/<int:item_id>", methods=["POST", "GET"])
+
+@app.route("/medicine/delete/<int:item_id>")
 def medicine_delete(item_id):
     global medicines
     medicines = [m for m in medicines if m["id"] != item_id]
     return redirect('/medicine')
 
-@app.route("/MakeAppointment.html", methods=['GET','POST'])
+
+# ------------------- Appointment -------------------
+@app.route("/MakeAppointment.html", methods=["GET", "POST"])
 def appointment():
-    name = request.form.get("name")
-    day = request.form.get("day")
-    time = request.form.get("time")
-    dentist = request.form.get("dentist")
-    service = request.form.get("service")
-    if not name or not day or not time:
-        flash("Vui lòng điền đầy đủ Tên, Ngày và Giờ!", "danger")  # 'danger' để hiện màu đỏ
-    else:
-        flash(f"Đặt lịch thành công cho {name} vào lúc {time} ngày {day}!", "success")
-        redirect('MakeAppointment.html')
-    page = request.args.get("page")
-    pages = int(page) if page is not None else 1
-    return render_template("MakeAppointment.html", pages=pages)
+    # Load DichVu.json mỗi lần vào route
+    with open(os.path.join(app.root_path, "data", "DichVu.json"), encoding="utf-8") as f:
+        services = json.load(f)
+
+    nhasi = dao.load_nhasi()
+
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        day = request.form.get("day")
+        time = request.form.get("time")
+
+        if not name or not day or not time:
+            flash("Vui lòng điền đầy đủ Tên, Ngày và Giờ!", "danger")
+        else:
+            flash(f"Đặt lịch thành công cho {name} vào lúc {time} ngày {day}!", "success")
+            return redirect("/MakeAppointment.html")
+
+    # Luôn render template có đủ dữ liệu
+    return render_template("MakeAppointment.html", services=services, nhasi=nhasi)
+
 
 @login.user_loader
 def get_user(user_id):
     return dao.get_user_by_id(user_id)
 
-@app.context_processor
-def detect_role_user():
-    return dict(UserRole=UserRole)
 
-
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+# ------------------- Cashier / Bills -------------------
 BILLS_FILE = os.path.join(DATA_DIR, "bills.json")
 
 
@@ -214,9 +235,8 @@ def cashier_page():
 
         return render_template("receipt.html", bill=bill)
 
-    return render_template("cashier.html",
-                           treatments=treatments,
-                           medicines=medicines)
+    return render_template("cashier.html", treatments=treatments, medicines=medicines)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

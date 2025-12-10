@@ -31,22 +31,30 @@
                 <label for="time">Chọn giờ:</label>
                 <input type="time" class="form-control" id="time" name="time"> </div>
         </div>
+<div class="mb-3">
+    <label for="dentist" class="form-label">Bác sĩ:</label>
+    <select class="form-select" id="dentist" name="dentist">
+            {%for n in nhasi%}
+            <option>{{n.Ho}} {{n.Ten}}</option>
+            {%endfor%}
+<!--            <option>Phạm Trần Hữu Khánh</option>-->
+<!--            <option>Nguyễn Hoài An</option>-->
+<!--            <option>Nguyễn Anh Khoa</option>-->
+        </select>
+</div>
+
+
         <div class="mb-3">
-            <label for="dentist" class="form-label">Bác sĩ:</label>
-            <select class="form-select" id="dentist" name="dentist">
-                <option>Phạm Trần Hữu Khánh</option>
-                <option>Nguyễn Hoài An</option>
-                <option>Nguyễn Anh Khoa</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="service" class="form-label">Dịch vụ:</label>
-            <select class="form-select" id="service" name="service">
-                <option>Trồng răng</option>
-                <option>Trám răng</option>
-                <option>Cạo cao răng</option>
-            </select>
-        </div>
+    <label for="service" class="form-label">Dịch vụ:</label>
+    <select class="form-select" id="service" name="service">
+        {% for dv in services %}
+    <option value="{{ dv.MaDichVu }}">
+        {{ dv.TenDichVu }}
+    </option>
+{% endfor %}
+
+    </select>
+</div>
         <button type="submit" class="btn btn-primary">Đặt lịch ngay</button>
     </form>
 </div>

@@ -8,7 +8,6 @@ from datetime import datetime
 from enum import Enum as RoleEnum
 from flask_login import UserMixin
 
-
 class Base(db.Model):
     __abstract__ = True
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -19,18 +18,16 @@ class Base(db.Model):
     def __str__(self):
         return self.name
 
-
 class UserRole(RoleEnum):
     USER = 1
     ADMIN = 2
-
 
 class User(Base, UserMixin):
     gmail = Column(String(150), unique=True, nullable=False)
     password = Column(String(150), nullable=False)
     avatar = Column(String(300),
                     default='https://cdn-icons-png.flaticon.com/128/18388/18388709.png')
-    role = Column(Enum(UserRole), default=UserRole.USER)
+    role = Column(Enum(UserRole),default=UserRole.USER)
 
 # ---------------------<<FAKE DATA NHA KHOA>>---------------------
 class ChuyenMon(db.Model):
@@ -273,6 +270,10 @@ if __name__ == "__main__":
             data = json.loads(f.read())
             for v in data:
                 db.session.add(ChiTietToaThuoc(**v))
+        password = hashlib.md5("123".encode("utf-8")).hexdigest()
+        u1 = User(name="Khoa", gmail="tp281973555k@gmail.com", password=password, role=UserRole.USER)
+
+        db.session.add(u1)
 
         password = hashlib.md5("123".encode("utf-8")).hexdigest()
         u1 = User(name="Khoa", gmail="tp281973555k@gmail.com", password=password, role=UserRole.USER)
