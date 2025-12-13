@@ -27,7 +27,7 @@
     <div>
         <span>👨‍⚕️ {{ username }}</span>
         &nbsp;|&nbsp;
-        <a href="/dashboard">Dashboard</a>
+        <a href="/dashboard">Quay lại</a>
         &nbsp;|&nbsp;
         <a href="/logout">Đăng xuất</a>
     </div>
@@ -37,7 +37,15 @@
     <h2>Lập Phiếu Điều Trị</h2>
 
     <form action="/treatment/add" method="POST">
-        <input type="text" name="service" placeholder="Dịch vụ (ví dụ: Trám răng)" required>
+        <select name="service" class="form-select" required>
+    <option value="">-- Chọn dịch vụ --</option>
+    {% for dv in services %}
+        <option value="{{ dv.MaDichVu }}">
+            {{ dv.TenDichVu }}
+        </option>
+    {% endfor %}
+</select>
+
         <input type="number" name="cost" placeholder="Chi phí (VNĐ)" required>
         <textarea name="note" placeholder="Ghi chú (nếu có)"></textarea>
         <button type="submit">Thêm phiếu</button>

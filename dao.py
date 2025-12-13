@@ -58,6 +58,14 @@ def get_user_by_id(user_id):
 #     #             return p
 #     # return None
 #     return Product.query.get(id)
+from models import DichVu
+
+def load_dich_vu():
+    return DichVu.query.all()
+from models import Thuoc
+
+def load_thuoc():
+    return Thuoc.query.all()
 
 if __name__=="__main__":
     with app.app_context():

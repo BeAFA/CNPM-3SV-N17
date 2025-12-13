@@ -25,7 +25,7 @@
     <div>
         <span>👨‍⚕️ {{ username }}</span>
         &nbsp;|&nbsp;
-        <a href="/dashboard">Dashboard</a>
+        <a href="/dashboard">Quay lại</a>
         &nbsp;|&nbsp;
         <a href="/logout">Đăng xuất</a>
     </div>
@@ -35,7 +35,12 @@
     <h2>Thuốc sử dụng cho bệnh nhân</h2>
 
     <form action="/medicine/add" method="POST">
-        <input type="text" name="name" placeholder="Tên thuốc" required>
+        <select name="name" required>
+        <option value="">Chọn thuốc</option>
+        {% for t in available_medicines %}
+        <option value="{{ t.TenThuoc }}">{{ t.TenThuoc }}</option>
+        {% endfor %}
+    </select>
         <input type="text" name="dosage" placeholder="Liều dùng (ví dụ: 1 viên sáng/1 viên tối)" required>
         <input type="number" name="days" placeholder="Số ngày" required>
         <input type="text" name="unit" placeholder="Đơn vị (viên/ml)" required>
