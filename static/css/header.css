@@ -1,43 +1,141 @@
+/* =========================
+   HEADER LAYOUT
+========================= */
 header {
-            background-color: rgba(0, 48, 87, 0.65);
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: white;
-        }
+    background-color: rgba(0, 48, 87, 0.65);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    position: relative;
+    z-index: 1000;
+}
 
-        .header-title {
-            font-size: 22px;
-            font-weight: bold;
-        }
+.header-title {
+    font-size: 22px;
+    font-weight: bold;
+}
 
-        nav>a {
-            color: #F0FFFF;
-            text-decoration: none;
-            margin-left: 25px;
-            font-size: 17px;
-            font-weight: bold;
-        }
+/* =========================
+   NAV BAR
+========================= */
+nav {
+    display: flex;
+    align-items: center;
+}
 
-        nav i {
-            margin-right: 6px;
-        }
-
-        nav a:hover {
-            text-decoration: underline;
-        }
-
+/* menu cấp 1 */
+nav > a,
+nav > .dropdown,
 nav form {
-    display: inline-block;
     margin-left: 25px;
 }
 
-.appointment-btn {
-    padding: 1rem 1.5rem;
+/* link chung */
+nav a {
+    color: #F0FFFF;
+    text-decoration: none;
+    font-size: 17px;
     font-weight: bold;
-    border-radius: 2rem;
-    transition: 0.25s ease;
+    height: 36px;
+    display: flex;
+    align-items: center;
 }
 
+nav i {
+    margin-right: 6px;
+}
 
+nav a:hover {
+    text-decoration: underline;
+}
+
+/* =========================
+   DROPDOWN MENU
+========================= */
+.dropdown {
+    position: relative;
+    height: 36px;              /* QUAN TRỌNG: giữ cùng chiều cao */
+    display: flex;
+    align-items: center;
+}
+
+.dropdown > a {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* MENU CON */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: 42px;                 /* canh chuẩn dưới header */
+    left: 0;
+    min-width: 230px;
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 999;
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.18);
+    border: 1px solid #e2e2e2;
+}
+
+/* LINK TRONG DROPDOWN */
+.dropdown-content a {
+    padding: 12px 14px;
+    font-size: 15px;
+    color: #222;
+    text-decoration: none;
+    margin-left: 0;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    transition: 0.25s;
+}
+
+.dropdown-content a:last-child {
+    border-bottom: none;
+}
+
+.dropdown-content a:hover {
+    background: #e0f2ff;
+    padding-left: 18px;
+    color: #0088cc;
+}
+
+/* hover mở menu */
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* =========================
+   BUTTON LOGIN / APPOINTMENT
+========================= */
+.appointment-btn {
+    background: #0077cc;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.appointment-btn:hover {
+    background: #005fa3;
+}
+
+/* =========================
+   USER AVATAR
+========================= */
+nav img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    margin-right: 6px;
+}

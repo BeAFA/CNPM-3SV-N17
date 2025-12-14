@@ -17,8 +17,13 @@ from models import User, UserRole
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 SERVICES_FILE = os.path.join(DATA_DIR, "DichVu.json")
 
-with open(SERVICES_FILE, "r", encoding="utf-8") as f:
-    services = json.load(f)
+@app.context_processor
+def inject_globals():
+    return {
+        "services": dao.load_dich_vu(),
+        "UserRole": UserRole
+    }
+
 
 # Lưu tạm trong RAM
 users = {}
@@ -30,10 +35,7 @@ def next_id(collection):
     return (collection[-1]["id"] + 1) if collection else 1
 
 
-# Inject biến services vào tất cả template
-@app.context_processor
-def inject_globals():
-    return dict(services=services, UserRole=UserRole)
+
 
 
 @app.route("/")
@@ -44,8 +46,9 @@ def home():
 
 @app.route("/service/<ma>")
 def service_detail(ma):
-    service = next((s for s in services if s["MaDichVu"] == ma), None)
+    service = next((s for s in dao.load_dich_vu() if s.MaDichVu == ma), None)
     return render_template("service_detail.html", service=service)
+
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -140,18 +143,22 @@ def treatment_add():
     return redirect('/treatment')
 
 
-@app.route("/treatment/delete/<int:item_id>")
+@app.route("/treatment/delete/<int:item_id>", methods=["POST"])
 def treatment_delete(item_id):
     global treatments
     treatments = [t for t in treatments if t["id"] != item_id]
     return redirect('/treatment')
 
 
+
 # ------------------- Medicine -------------------
 @app.route("/medicine")
 def medicine():
     username = current_user.name
-    return render_template("medicine.html", username=username, medicines=medicines)
+    # Lấy danh sách thuốc từ CSDL
+    available_medicines = dao.load_thuoc()
+    return render_template("medicine.html", username=username, medicines=medicines, available_medicines=available_medicines)
+
 
 
 @app.route("/medicine/add", methods=["POST"])
@@ -169,22 +176,27 @@ def medicine_add():
     return redirect('/medicine')
 
 
-@app.route("/medicine/delete/<int:item_id>")
+@app.route("/medicine/delete/<int:item_id>", methods=["POST"])
 def medicine_delete(item_id):
     global medicines
     medicines = [m for m in medicines if m["id"] != item_id]
     return redirect('/medicine')
 
 
+
 # ------------------- Appointment -------------------
 @app.route("/MakeAppointment.html", methods=["GET", "POST"])
 def appointment():
-    # Load DichVu.json mỗi lần vào route
-    with open(os.path.join(app.root_path, "data", "DichVu.json"), encoding="utf-8") as f:
+    # Load dịch vụ
+    json_path = os.path.join(app.root_path, "data", "DichVu.json")
+    if not os.path.exists(json_path):
+        return "Không tìm thấy file DichVu.json", 500
+
+    with open(json_path, encoding="utf-8") as f:
         services = json.load(f)
 
-    nhasi = dao.load_nhasi()
-
+    # Load nha sĩ
+    nhasi = dao.load_nhasi()  # phải tồn tại trong dao.py
 
     if request.method == "POST":
         name = request.form.get("name")
@@ -197,7 +209,6 @@ def appointment():
             flash(f"Đặt lịch thành công cho {name} vào lúc {time} ngày {day}!", "success")
             return redirect("/MakeAppointment.html")
 
-    # Luôn render template có đủ dữ liệu
     return render_template("MakeAppointment.html", services=services, nhasi=nhasi)
 
 
