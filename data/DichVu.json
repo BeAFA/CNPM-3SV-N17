@@ -1,12 +1,12 @@
 [
-  { "MaDichVu": "DV001", "TenDichVu": "Cạo vôi", "ChiPhi": 300000, "MoTa": "Làm sạch vôi răng và mảng bám" },
-  { "MaDichVu": "DV002", "TenDichVu": "Tẩy trắng", "ChiPhi": 2500000, "MoTa": "Làm trắng răng bằng công nghệ cao" },
-  { "MaDichVu": "DV003", "TenDichVu": "Trám răng", "ChiPhi": 500000, "MoTa": "Điều trị sâu răng" },
-  { "MaDichVu": "DV004", "TenDichVu": "Nhổ răng", "ChiPhi": 800000, "MoTa": "Nhổ răng khôn hoặc răng bị hư" },
-  { "MaDichVu": "DV005", "TenDichVu": "Chữa tủy", "ChiPhi": 1500000, "MoTa": "Điều trị nội nha" },
-  { "MaDichVu": "DV006", "TenDichVu": "Chỉnh nha", "ChiPhi": 20000000, "MoTa": "Niềng răng mắc cài hoặc trong suốt" },
-  { "MaDichVu": "DV007", "TenDichVu": "Răng sứ", "ChiPhi": 5000000, "MoTa": "Làm mão răng sứ thẩm mỹ hoặc bảo vệ" },
-  { "MaDichVu": "DV008", "TenDichVu": "Implant", "ChiPhi": 35000000, "MoTa": "Cấy ghép trụ Titanium phục hồi răng mất" },
-  { "MaDichVu": "DV009", "TenDichVu": "Tiểu phẫu", "ChiPhi": 1000000, "MoTa": "Cắt chóp răng, loại bỏ u nang nhỏ" },
-  { "MaDichVu": "DV010", "TenDichVu": "Khám TMH", "ChiPhi": 200000, "MoTa": "Khám và tư vấn tổng quát tình trạng răng miệng" }
+  { "id": "DV001", "name": "Cạo vôi", "ChiPhi": 300000, "description": "Làm sạch vôi răng và mảng bám" },
+  { "id": "DV002", "name": "Tẩy trắng", "ChiPhi": 2500000, "description": "Làm trắng răng bằng công nghệ cao" },
+  { "id": "DV003", "name": "Trám răng", "ChiPhi": 500000, "description": "Điều trị sâu răng" },
+  { "id": "DV004", "name": "Nhổ răng", "ChiPhi": 800000, "description": "Nhổ răng khôn hoặc răng bị hư" },
+  { "id": "DV005", "name": "Chữa tủy", "ChiPhi": 1500000, "description": "Điều trị nội nha" },
+  { "id": "DV006", "name": "Chỉnh nha", "ChiPhi": 20000000, "description": "Niềng răng mắc cài hoặc trong suốt" },
+  { "id": "DV007", "name": "Răng sứ", "ChiPhi": 5000000, "description": "Làm mão răng sứ thẩm mỹ hoặc bảo vệ" },
+  { "id": "DV008", "name": "Implant", "ChiPhi": 35000000, "description": "Cấy ghép trụ Titanium phục hồi răng mất" },
+  { "id": "DV009", "name": "Tiểu phẫu", "ChiPhi": 1000000, "description": "Cắt chóp răng, loại bỏ u nang nhỏ" },
+  { "id": "DV010", "name": "Khám TMH", "ChiPhi": 200000, "description": "Khám và tư vấn tổng quát tình trạng răng miệng" }
 ]

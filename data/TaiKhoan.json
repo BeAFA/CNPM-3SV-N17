@@ -2,25 +2,37 @@
   {
     "MaTaiKhoan": "TK001",
     "MaNguoiDung": "ND001",
-    "TenDangNhap": "drnguyena",
-    "MatKhau": "pass123"
+    "Gmail": "drnguyena@gmail.com",
+    "MatKhau": "pass123",
+    "NgayTao": "2025-12-12",
+    "Avatar": "https://cdn-icons-png.flaticon.com/128/18388/18388709.png",
+    "Role": "NHASI"
   },
   {
     "MaTaiKhoan": "TK002",
     "MaNguoiDung": "ND002",
-    "TenDangNhap": "drtranb",
-    "MatKhau": "pass123"
+    "Gmail": "drtranb@gmail.com",
+    "MatKhau": "pass123",
+    "NgayTao": "2025-12-12",
+    "Avatar": "https://cdn-icons-png.flaticon.com/128/18388/18388709.png",
+    "Role": "NHASI"
   },
   {
     "MaTaiKhoan": "TK003",
     "MaNguoiDung": "ND004",
-    "TenDangNhap": "khphamd",
-    "MatKhau": "pass123"
+    "Gmail": "khphamd@gmail.com",
+    "MatKhau": "pass123",
+    "NgayTao": "2025-12-12",
+    "Avatar": "https://cdn-icons-png.flaticon.com/128/18388/18388709.png",
+    "Role": "KHACHHANG"
   },
   {
     "MaTaiKhoan": "TK004",
     "MaNguoiDung": "ND005",
-    "TenDangNhap": "khvoe",
-    "MatKhau": "pass123"
+    "Gmail": "khvoe@gmail.com",
+    "MatKhau": "pass123",
+    "NgayTao": "2025-12-12",
+    "Avatar": "https://cdn-icons-png.flaticon.com/128/18388/18388709.png",
+    "Role": "KHACHHANG"
   }
 ]

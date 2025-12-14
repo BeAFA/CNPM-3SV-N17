@@ -1,12 +1,12 @@
 [
-  { "MaThuoc": "TH001", "TenThuoc": "Amoxicillin 500mg", "DonVi": "Viên", "MoTa": "Kháng sinh phổ rộng" },
-  { "MaThuoc": "TH002", "TenThuoc": "Paracetamol 500mg", "DonVi": "Viên", "MoTa": "Giảm đau, hạ sốt" },
-  { "MaThuoc": "TH003", "TenThuoc": "Metronidazole 250mg", "DonVi": "Viên", "MoTa": "Kháng sinh cho nhiễm trùng kỵ khí" },
-  { "MaThuoc": "TH004", "TenThuoc": "Kem đánh răng F", "DonVi": "Tuýp", "MoTa": "Kem đánh răng đặc biệt" },
-  { "MaThuoc": "TH005", "TenThuoc": "Clindamycin 300mg", "DonVi": "Viên", "MoTa": "Kháng sinh cho các bệnh nhiễm trùng răng miệng nặng" },
-  { "MaThuoc": "TH006", "TenThuoc": "Ibuprofen 400mg", "DonVi": "Viên", "MoTa": "Chống viêm và giảm đau không steroid (NSAID)" },
-  { "MaThuoc": "TH007", "TenThuoc": "Chlorhexidine 0.2%", "DonVi": "Chai", "MoTa": "Nước súc miệng sát khuẩn" },
-  { "MaThuoc": "TH008", "TenThuoc": "Lidocaine 2%", "DonVi": "Ống", "MoTa": "Thuốc gây tê tại chỗ" },
-  { "MaThuoc": "TH009", "TenThuoc": "Hydrogel bôi", "DonVi": "Tuýp", "MoTa": "Gel bôi giảm đau, lành vết thương" },
-  { "MaThuoc": "TH010", "TenThuoc": "Canxi D3", "DonVi": "Viên", "MoTa": "Bổ sung Canxi cho xương và răng" }
+  { "id": "TH001", "name": "Amoxicillin 500mg", "DonVi": "Viên", "description": "Kháng sinh phổ rộng" },
+  { "id": "TH002", "name": "Paracetamol 500mg", "DonVi": "Viên", "description": "Giảm đau, hạ sốt" },
+  { "id": "TH003", "name": "Metronidazole 250mg", "DonVi": "Viên", "description": "Kháng sinh cho nhiễm trùng kỵ khí" },
+  { "id": "TH004", "name": "Kem đánh răng F", "DonVi": "Tuýp", "description": "Kem đánh răng đặc biệt" },
+  { "id": "TH005", "name": "Clindamycin 300mg", "DonVi": "Viên", "description": "Kháng sinh cho các bệnh nhiễm trùng răng miệng nặng" },
+  { "id": "TH006", "name": "Ibuprofen 400mg", "DonVi": "Viên", "description": "Chống viêm và giảm đau không steroid (NSAID)" },
+  { "id": "TH007", "name": "Chlorhexidine 0.2%", "DonVi": "Chai", "description": "Nước súc miệng sát khuẩn" },
+  { "id": "TH008", "name": "Lidocaine 2%", "DonVi": "Ống", "description": "Thuốc gây tê tại chỗ" },
+  { "id": "TH009", "name": "Hydrogel bôi", "DonVi": "Tuýp", "description": "Gel bôi giảm đau, lành vết thương" },
+  { "id": "TH010", "name": "Canxi D3", "DonVi": "Viên", "description": "Bổ sung Canxi cho xương và răng" }
 ]
