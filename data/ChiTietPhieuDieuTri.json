@@ -1,6 +1,5 @@
 [
-  { "MaPhieuDieuTri": "PDT01", "MaDichVu": "DV001", "GhiChu": "Cạo vôi toàn hàm" },
-  { "MaPhieuDieuTri": "PDT01", "MaDichVu": "DV003", "GhiChu": "Trám Composite răng 46" },
-  { "MaPhieuDieuTri": "PDT02", "MaDichVu": "DV002", "GhiChu": "Tẩy trắng tại phòng khám" },
-  { "MaPhieuDieuTri": "PDT03", "MaDichVu": "DV005", "GhiChu": "Lấy tủy lần 1" }
+  {"PhieuDieuTriId": 1, "DichVuId": 4, "SoLuong": 1, "GhiChu": "Trám răng số 36"},
+  {"PhieuDieuTriId": 2, "DichVuId": 5, "SoLuong": 1, "GhiChu": "Gói niềng kim loại"},
+  {"PhieuDieuTriId": 3, "DichVuId": 1, "SoLuong": 1, "GhiChu": "Cạo vôi 2 hàm"}
 ]

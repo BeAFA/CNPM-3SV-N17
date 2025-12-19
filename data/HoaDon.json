@@ -1,0 +1,5 @@
+[
+  {"id": 1, "PhieuDieuTriId": 1, "KeToanId": 2, "TongTien": 330000.0, "DaThanhToan": true},
+  {"id": 2, "PhieuDieuTriId": 2, "KeToanId": null, "TongTien": 25000000.0, "DaThanhToan": false},
+  {"id": 3, "PhieuDieuTriId": 3, "KeToanId": 2, "TongTien": 320000.0, "DaThanhToan": true}
+]

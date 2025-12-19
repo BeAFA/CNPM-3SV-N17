@@ -1,8 +1,5 @@
 [
-  { "id": "CM001", "name": "Nha khoa Tổng quát", "description": "Khám, điều trị và phòng ngừa cơ bản" },
-  { "id": "CM002", "name": "Nha khoa Thẩm mỹ", "description": "Tẩy trắng, bọc sứ, veneer" },
-  { "id": "CM003", "name": "Nội nha", "description": "Điều trị tủy răng" },
-  { "id": "CM004", "name": "Nha chu", "description": "Điều trị bệnh nướu và mô quanh răng" },
-  { "id": "CM005", "name": "Cấy ghép Implant", "description": "Phục hình răng bị mất" },
-  { "id": "CM006", "name": "Hành chính Kế toán", "description": "Quản lý tài chính và hồ sơ" }
+  {"id": 1, "TenChuyenMon": "Nha Chu", "MoTa": "Chuyên về nướu và mô quanh răng"},
+  {"id": 2, "TenChuyenMon": "Chỉnh Nha", "MoTa": "Niềng răng và chỉnh hình hàm mặt"},
+  {"id": 3, "TenChuyenMon": "Phục Hình", "MoTa": "Làm răng giả, răng sứ"}
 ]

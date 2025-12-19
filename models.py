@@ -1,268 +1,282 @@
 import enum
-import json
-
-from __init__ import db, app
-from sqlalchemy import Column, Integer, Float, String, ForeignKey, Text, DateTime, Enum, Boolean, Date, Time
-from sqlalchemy.orm import relationship
 from datetime import datetime
-from enum import Enum as RoleEnum
+from flask import json
+from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date, DateTime, Time, Enum, Boolean
+from sqlalchemy.orm import relationship
+from __init__ import app, db
 
-
-#---------------------<<FAKE DATA NHA KHOA LAN 3>>---------------------
-class Base(db.Model):
-    __abstract__ = True
-    id = Column(String(10), primary_key=True)
-    name = Column(String(150), nullable=False)
-    description = Column(String(255), nullable=True)
-
-    def __str__(self):
-        return self.name
-
-class ChuyenMon(Base):
-    __tablename__ = 'ChuyenMon'
-
-    NhaSi = relationship('NhaSi', backref='ChuyenMon', lazy=True)
-    KeToan = relationship('KeToan', backref='ChuyenMon', lazy=True)
-
+# ================= ENUMS =================
 class UserRole(enum.Enum):
-    KHACHHANG = "KHACHHANG"
     ADMIN = "ADMIN"
+    KHACHHANG = "KHACHHANG"
     NHASI = "NHASI"
     KETOAN = "KETOAN"
 
-class NguoiDung(db.Model):
+class GioiTinh(enum.Enum):
+    NAM = "NAM"
+    NU = "NU"
+    KHAC = "KHAC"
+
+# ================= BASE MODEL =================
+class Base(db.Model):
+    __abstract__ = True
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    created_date = Column(DateTime, default=datetime.now)
+    active =  Column(Boolean, default=True)
+
+# ================= USER & ACCOUNT SYSTEM =================
+class NguoiDung(Base):
     __tablename__ = 'NguoiDung'
-    MaNguoiDung = Column(String(10), primary_key=True)
-    Ho = Column(String(50), nullable=False)
-    Ten = Column(String(50), nullable=False)
+
+    HoVaTen = Column(String(200), nullable=False)
     NgaySinh = Column(Date, nullable=True)
-    GioiTinh = Column(String(1), nullable=True)
+    GioiTinh = Column(Enum(GioiTinh),default=GioiTinh.NAM, nullable=False)
     SDT = Column(String(15), nullable=True)
+    type = Column(String(50))
 
-    NhaSi = relationship('NhaSi', backref='NguoiDung', lazy=True)
-    KhachHang = relationship('KhachHang', backref='NguoiDung', lazy=True)
-    KeToan = relationship('KeToan', backref='NguoiDung', lazy=True)
-    TaiKhoan = relationship('TaiKhoan', backref='NguoiDung', lazy=True)
-    Gmail = relationship('Gmail', backref='NguoiDung', lazy=True)
+    __mapper_args__ = {
+        'polymorphic_identity': 'nguoidung',
+        'polymorphic_on': type
+    }
 
-class Gmail(db.Model):
-    __tablename__ = 'Gmail'
-    Email = Column(String(100), primary_key=True)
-    MaNguoiDung = Column(String(10), ForeignKey('NguoiDung.MaNguoiDung'), nullable=False)
+    def __str__(self):
+        return self.HoVaTen
 
-
-class TaiKhoan(db.Model, UserMixin):
-    __tablename__ = 'TaiKhoan'
-    MaTaiKhoan = Column(String(10), primary_key=True)
-    MaNguoiDung = Column(String(10), ForeignKey('NguoiDung.MaNguoiDung'))
-    Gmail = Column(String(150), unique=True, nullable=False)
-    MatKhau = Column(String(150), nullable=False)
-    NgayTao = Column(Date)
-    Avatar = Column(String(300),
-                    default='https://cdn-icons-png.flaticon.com/128/18388/18388709.png')
-    Role = Column(String(50),default=UserRole.KHACHHANG)
-
-class KhachHang(db.Model):
-    __tablename__ = 'KhachHang'
-    MaKhachHang = Column(String(10), ForeignKey('NguoiDung.MaNguoiDung'), primary_key=True)
-    TienSuBenhLy = Column(String(255))
-
-    LichKham = relationship('LichKham', backref='KhachHang', lazy=True)
-    PhieuDieuTri = relationship('PhieuDieuTri', backref='KhachHang', lazy=True)
-
-class NhaSi(db.Model):
+class NhaSi(NguoiDung):
     __tablename__ = 'NhaSi'
-    MaNhaSi = Column(String(10), ForeignKey('NguoiDung.MaNguoiDung'), primary_key=True)
-    MaChuyenMon = Column(String(10), ForeignKey('ChuyenMon.id'))
-    NgayNhanViec = Column(Date)
 
-    LichKham = relationship('LichKham', backref='NhaSi', lazy=True)
-    PhieuDieuTri = relationship('PhieuDieuTri', backref='NhaSi', lazy=True)
-    ToaThuoc = relationship('ToaThuoc', backref='NhaSi', lazy=True)
+    id = Column(Integer, ForeignKey('NguoiDung.id'), primary_key=True)
+    MaNhaSi = Column(String(20), unique=True)
+    ChuyenMonId = Column(Integer, ForeignKey('ChuyenMon.id'))
 
-class KeToan(db.Model):
+    chuyen_mon = relationship('ChuyenMon', backref='ds_nha_si', lazy=True)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'nhasi',
+    }
+
+class KhachHang(NguoiDung):
+    __tablename__ = 'KhachHang'
+
+    id = Column(Integer, ForeignKey('NguoiDung.id'), primary_key=True)
+    TienSuBenhLy = Column(String(250))
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'khachhang',
+    }
+
+class KeToan(NguoiDung):
     __tablename__ = 'KeToan'
-    MaKeToan = Column(String(10), ForeignKey('NguoiDung.MaNguoiDung'), primary_key=True)
-    MaChuyenMon = Column(String(10), ForeignKey('ChuyenMon.id'))
-    NgayNhanViec = Column(Date)
+
+    id = Column(Integer, ForeignKey('NguoiDung.id'), primary_key=True)
+    ChungChiHanhNghe = Column(String(250))
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'ketoan',
+    }
+
+class Admin(NguoiDung):
+    __tablename__ = 'Admin'
+
+    id = Column(Integer, ForeignKey('NguoiDung.id'), primary_key=True)
+    CapDoQuanTri = Column(Integer, default=1)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'admin',
+    }
+
+class TaiKhoan(Base, UserMixin):
+    __tablename__ = 'TaiKhoan'
+
+    NguoiDungId = Column(Integer, ForeignKey('NguoiDung.id'), unique=True, nullable=False)
+    Email = Column(String(100), unique=True)
+    MatKhau = Column(String(255), nullable=False)
+    Avatar = Column(String(300), default='https://cdn-icons-png.flaticon.com/128/18388/18388709.png')
+    Role = Column(Enum(UserRole), default=UserRole.KHACHHANG,nullable=False)
+
+    nguoi_dung = relationship('NguoiDung', backref='tai_khoan', uselist=False, lazy=True)
+
+
+# ================= SPECIALIZATION =================
+class ChuyenMon(Base):
+    __tablename__ = 'ChuyenMon'
+    TenChuyenMon = Column(String(150), nullable=False)  # Đổi name -> TenChuyenMon cho đồng bộ
+    MoTa = Column(String(255))
+
+# ================= CLINIC OPERATIONS =================
+class LichKham(Base):
+    __tablename__ = 'LichKham'
+
+    NhaSiId = Column(Integer, ForeignKey('NhaSi.id'), nullable=False)
+    KhachHangId = Column(Integer, ForeignKey('KhachHang.id'), nullable=False)
+    NgayKham = Column(Date)
+    GioKham = Column(Time)
+    GhiChu = Column(String(255))
+
+    benh_nhan = relationship('KhachHang', backref='ds_lich_kham', lazy=True)
 
 class DichVu(Base):
     __tablename__ = 'DichVu'
-    ChiPhi = Column(Integer, nullable=False)
 
-    ChiTietPhieuDieuTri = relationship('ChiTietPhieuDieuTri', backref='DichVu', lazy=True)
+    TenDichVu = Column(String(150), nullable=False)
+    ChiPhi = Column(Float, default=0.0)
+    MoTa = Column(String(250))
 
-class Thuoc(Base):
-    __tablename__ = 'Thuoc'
-    DonVi = Column(String(20))
+    def __str__(self):
+        return self.TenDichVu
 
-    LoThuoc = relationship('LoThuoc', backref='Thuoc', lazy=True)
-    ChiTietLoThuoc = relationship('ChiTietLoThuoc', backref='Thuoc', lazy=True)
-    ChiTietToaThuoc = relationship('ChiTietToaThuoc', backref='Thuoc', lazy=True)
-
-class LoThuoc(db.Model):
-    __tablename__ = 'LoThuoc'
-    MaLoThuoc = Column(String(10), primary_key=True)
-    MaThuoc = Column(String(10), ForeignKey('Thuoc.id'))
-    HanSuDung = Column(Date)
-
-    ChiTietLoThuoc = relationship('ChiTietLoThuoc', backref='LoThuoc', lazy=True)
-
-class ChiTietLoThuoc(db.Model):
-    __tablename__ = 'ChiTietLoThuoc'
-    MaLoThuoc = Column(String(10), ForeignKey('LoThuoc.MaLoThuoc'), primary_key=True)
-    MaThuoc = Column(String(10), ForeignKey('Thuoc.id'), primary_key=True)
-    SoLuongTon = Column(Integer)
-
-class LichKham(db.Model):
-    __tablename__ = 'LichKham'
-    MaLichKham = Column(String(10), primary_key=True)
-    MaNhaSi = Column(String(10), ForeignKey('NhaSi.MaNhaSi'))
-    MaKhachHang = Column(String(10), ForeignKey('KhachHang.MaKhachHang'))
-    NgayKham = Column(Date)
-    GioKham = Column(Time)
-
-class PhieuDieuTri(db.Model):
+class PhieuDieuTri(Base):
     __tablename__ = 'PhieuDieuTri'
-    MaPhieuDieuTri = Column(String(10), primary_key=True)
-    MaNhaSi = Column(String(10), ForeignKey('NhaSi.MaNhaSi'))
-    MaKhachHang = Column(String(10), ForeignKey('KhachHang.MaKhachHang'))
-    NgayLap = Column(Date)
-    ChuanDoan = Column(String(255))
 
-    ChiTiet = relationship('ChiTietPhieuDieuTri', backref='PhieuDieuTri', lazy=True)
-    ToaThuoc = relationship('ToaThuoc', backref='PhieuDieuTri', lazy=True)
+    KhachHangId = Column(Integer, ForeignKey('KhachHang.id'), nullable=False)
+    NhaSiId = Column(Integer, ForeignKey('NhaSi.id'), nullable=False)
+    ChuanDoan = Column(String(250))
+
+    toa_thuoc = relationship('ToaThuoc', backref='phieu_dieu_tri', uselist=False, lazy=True)
 
 class ChiTietPhieuDieuTri(db.Model):
     __tablename__ = 'ChiTietPhieuDieuTri'
-    MaPhieuDieuTri = Column(String(10), ForeignKey('PhieuDieuTri.MaPhieuDieuTri'), primary_key=True)
-    MaDichVu = Column(String(10), ForeignKey('DichVu.id'), primary_key=True)
+
+    PhieuDieuTriId = Column(Integer, ForeignKey('PhieuDieuTri.id'), primary_key=True, nullable=False)
+    DichVuId = Column(Integer, ForeignKey('DichVu.id'), primary_key=True, nullable=False)
+    SoLuong = Column(Integer, default=1)
     GhiChu = Column(String(255))
 
-class ToaThuoc(db.Model):
-    __tablename__ = 'ToaThuoc'
-    MaToaThuoc = Column(String(10), primary_key=True)
-    MaNhaSi = Column(String(10), ForeignKey('NhaSi.MaNhaSi'))
-    MaPhieuDieuTri = Column(String(10), ForeignKey('PhieuDieuTri.MaPhieuDieuTri'))
-    NgayLap = Column(Date)
+    dich_vu = relationship('DichVu', backref='cac_lan_su_dung',lazy=True)
+    phieu_dieu_tri = relationship('PhieuDieuTri', backref='ds_chi_tiet')
 
-    ChiTiet = relationship('ChiTietToaThuoc', backref='ToaThuoc', lazy=True)
+class Thuoc(Base):
+    __tablename__ = 'Thuoc'
+
+    TenThuoc = Column(String(150), nullable=False)
+    DonVi = Column(String(20))
+    GiaBan = Column(Float, default=0.0)
+
+    lo_thuoc = relationship('LoThuoc', backref='loai_thuoc', lazy=True)
+
+class LoThuoc(db.Model):
+    __tablename__ = 'LoThuoc'
+
+    MaLoThuoc = Column(String(150), primary_key=True, nullable=False)
+    ThuocId = Column(Integer, ForeignKey('Thuoc.id'), nullable=False)
+    SoLuongNhap = Column(Integer)
+    SoLuongTon = Column(Integer)
+    HanSuDung = Column(Date)
+
+class ToaThuoc(Base):
+    __tablename__ = 'ToaThuoc'
+
+    PhieuDieuTriId = Column(Integer, ForeignKey('PhieuDieuTri.id'), nullable=False)
+    GhiChu = Column(String(250))
+
+    ds_chi_tiet_thuoc = relationship('ChiTietToaThuoc', backref='toa_thuoc', lazy=True)
 
 class ChiTietToaThuoc(db.Model):
     __tablename__ = 'ChiTietToaThuoc'
-    MaToaThuoc = Column(String(10), ForeignKey('ToaThuoc.MaToaThuoc'), primary_key=True)
-    MaThuoc = Column(String(10), ForeignKey('Thuoc.id'), primary_key=True)
-    SoNgayDung = Column(Integer)
-    SoLuong = Column(Integer)
-    DonVi = Column(String(20))
-    GhiChu = Column(String(255))
 
+    ToaThuocId = Column(Integer, ForeignKey('ToaThuoc.id'), nullable=False, primary_key=True)
+    ThuocId = Column(Integer, ForeignKey('Thuoc.id'), nullable=False, primary_key=True)
+
+    SoLuong = Column(Integer)
+    CachDung = Column(String(255))
+    ThanhTien = Column(Float, default=0.0)
+
+    loai_thuoc = relationship('Thuoc', backref='ds_thuoc', lazy=True)
+
+
+# ================= BILLING (BẢNG MỚI QUAN TRỌNG) =================
+class HoaDon(Base):
+    __tablename__ = 'HoaDon'
+
+    PhieuDieuTriId = Column(Integer, ForeignKey('PhieuDieuTri.id'), unique=True, nullable=False)
+    KeToanId = Column(Integer, ForeignKey('KeToan.id'), nullable=True)
+    TongTien = Column(Float, default=0.0)
+    DaThanhToan = Column(Boolean, default=False)
+
+    phieu_dieu_tri = relationship('PhieuDieuTri', backref='hoa_don', uselist=False)
+
+
+# ================= MAIN RUN =================
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
 
-        # import hashlib
-        # password = hashlib.md5("123".encode("utf-8")).hexdigest()
-        # u1 = User(name="Khoa", gmail = "tp281973555k@gmail.com", password =password, role=UserRole.USER)
+        # with open('data/Admin.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(Admin(**v))
         #
-        # db.session.add(u1)
+        # with open('data/KhachHang.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(KhachHang(**v))
+        #
+        # with open('data/KeToan.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(KeToan(**v))
+        #
+        # with open('data/NhaSi.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(NhaSi(**v))
+        #
+        # with open('data/ChuyenMon.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(ChuyenMon(**v))
+        #
+        # with open('data/ChiTietPhieuDieuTri.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(ChiTietPhieuDieuTri(**v))
+        #
+        # with open('data/ChiTietToaThuoc.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(ChiTietToaThuoc(**v))
+        #
+        # with open('data/DichVu.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(DichVu(**v))
+        #
+        # with open('data/HoaDon.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(HoaDon(**v))
+        #
+        # with open('data/LichKham.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(LichKham(**v))
+        #
+        # with open('data/LoThuoc.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(LoThuoc(**v))
+        #
+        # with open('data/PhieuDieuTri.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(PhieuDieuTri(**v))
+        #
+        # with open('data/TaiKhoan.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(TaiKhoan(**v))
+        #
+        # with open('data/Thuoc.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(Thuoc(**v))
+        #
+        # with open('data/ToaThuoc.json', encoding='utf-8') as f:
+        #     data = json.loads(f.read())
+        #     for v in data:
+        #         db.session.add(ToaThuoc(**v))
 
-#---------------------<<THÊM DATA VÀO CSDL NHA KHOA>>---------------------
-        # ChuyenMon
-        with open('data/ChuyenMon.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(ChuyenMon(**v))
-
-        # NguoiDung
-        with open('data/NguoiDung.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(NguoiDung(**v))
-
-        # Gmail
-        with open('data/Gmail.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(Gmail(**v))
-
-        # NhaSi
-        with open('data/NhaSi.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(NhaSi(**v))
-
-        # KhachHang
-        with open('data/KhachHang.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(KhachHang(**v))
-
-        # KeToan
-        with open('data/KeToan.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(KeToan(**v))
-
-        # TaiKhoan
-        with open('data/TaiKhoan.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(TaiKhoan(**v))
-
-        # DichVu
-        with open('data/DichVu.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(DichVu(**v))
-
-        # Thuoc
-        with open('data/Thuoc.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(Thuoc(**v))
-
-        # LoThuoc
-        with open('data/LoThuoc.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(LoThuoc(**v))
-
-        # ChiTietLoThuoc
-        with open('data/ChiTietLoThuoc.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(ChiTietLoThuoc(**v))
-
-        # LichKham
-        with open('data/LichKham.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(LichKham(**v))
-
-        # PhieuDieuTri
-        with open('data/PhieuDieuTri.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(PhieuDieuTri(**v))
-
-        # ChiTietPhieuDieuTri
-        with open('data/ChiTietPhieuDieuTri.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(ChiTietPhieuDieuTri(**v))
-
-        # ToaThuoc
-        with open('data/ToaThuoc.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(ToaThuoc(**v))
-
-        # ChiTietToaThuoc
-        with open('data/ChiTietToaThuoc.json', encoding='utf-8') as f:
-            data = json.loads(f.read())
-            for v in data:
-                db.session.add(ChiTietToaThuoc(**v))
 
         db.session.commit()

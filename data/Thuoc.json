@@ -1,12 +1,7 @@
 [
-  { "id": "TH001", "name": "Amoxicillin 500mg", "DonVi": "Viên", "description": "Kháng sinh phổ rộng" },
-  { "id": "TH002", "name": "Paracetamol 500mg", "DonVi": "Viên", "description": "Giảm đau, hạ sốt" },
-  { "id": "TH003", "name": "Metronidazole 250mg", "DonVi": "Viên", "description": "Kháng sinh cho nhiễm trùng kỵ khí" },
-  { "id": "TH004", "name": "Kem đánh răng F", "DonVi": "Tuýp", "description": "Kem đánh răng đặc biệt" },
-  { "id": "TH005", "name": "Clindamycin 300mg", "DonVi": "Viên", "description": "Kháng sinh cho các bệnh nhiễm trùng răng miệng nặng" },
-  { "id": "TH006", "name": "Ibuprofen 400mg", "DonVi": "Viên", "description": "Chống viêm và giảm đau không steroid (NSAID)" },
-  { "id": "TH007", "name": "Chlorhexidine 0.2%", "DonVi": "Chai", "description": "Nước súc miệng sát khuẩn" },
-  { "id": "TH008", "name": "Lidocaine 2%", "DonVi": "Ống", "description": "Thuốc gây tê tại chỗ" },
-  { "id": "TH009", "name": "Hydrogel bôi", "DonVi": "Tuýp", "description": "Gel bôi giảm đau, lành vết thương" },
-  { "id": "TH010", "name": "Canxi D3", "DonVi": "Viên", "description": "Bổ sung Canxi cho xương và răng" }
+  {"id": 1, "TenThuoc": "Paracetamol 500mg", "DonVi": "Viên", "GiaBan": 1000.0},
+  {"id": 2, "TenThuoc": "Amoxicillin 500mg", "DonVi": "Viên", "GiaBan": 2000.0},
+  {"id": 3, "TenThuoc": "Ibuprofen 400mg", "DonVi": "Viên", "GiaBan": 1500.0},
+  {"id": 4, "TenThuoc": "Nước súc miệng Kin", "DonVi": "Chai", "GiaBan": 120000.0},
+  {"id": 5, "TenThuoc": "Vitamin C", "DonVi": "Vỉ", "GiaBan": 15000.0}
 ]

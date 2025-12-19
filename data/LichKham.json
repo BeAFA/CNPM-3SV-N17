@@ -1,6 +1,5 @@
 [
-  { "MaLichKham": "LK001", "MaNhaSi": "ND001", "MaKhachHang": "ND004", "NgayKham": "2025-11-27", "GioKham": "09:00:00" },
-  { "MaLichKham": "LK002", "MaNhaSi": "ND001", "MaKhachHang": "ND005", "NgayKham": "2025-11-27", "GioKham": "10:00:00" },
-  { "MaLichKham": "LK003", "MaNhaSi": "ND002", "MaKhachHang": "ND006", "NgayKham": "2025-11-27", "GioKham": "14:30:00" },
-  { "MaLichKham": "LK004", "MaNhaSi": "ND003", "MaKhachHang": "ND007", "NgayKham": "2025-11-28", "GioKham": "08:30:00" }
+  {"id": 1, "NhaSiId": 3, "KhachHangId": 5, "NgayKham": "2026-01-05", "GioKham": "08:00:00", "GhiChu": "Đau răng hàm"},
+  {"id": 2, "NhaSiId": 4, "KhachHangId": 6, "NgayKham": "2026-01-12", "GioKham": "09:30:00", "GhiChu": "Tư vấn niềng răng"},
+  {"id": 3, "NhaSiId": 3, "KhachHangId": 7, "NgayKham": "2026-01-02", "GioKham": "14:00:00", "GhiChu": "Cạo vôi"}
 ]

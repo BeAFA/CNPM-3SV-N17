@@ -1,12 +1,7 @@
 [
-  { "id": "DV001", "name": "Cạo vôi", "ChiPhi": 300000, "description": "Làm sạch vôi răng và mảng bám" },
-  { "id": "DV002", "name": "Tẩy trắng", "ChiPhi": 2500000, "description": "Làm trắng răng bằng công nghệ cao" },
-  { "id": "DV003", "name": "Trám răng", "ChiPhi": 500000, "description": "Điều trị sâu răng" },
-  { "id": "DV004", "name": "Nhổ răng", "ChiPhi": 800000, "description": "Nhổ răng khôn hoặc răng bị hư" },
-  { "id": "DV005", "name": "Chữa tủy", "ChiPhi": 1500000, "description": "Điều trị nội nha" },
-  { "id": "DV006", "name": "Chỉnh nha", "ChiPhi": 20000000, "description": "Niềng răng mắc cài hoặc trong suốt" },
-  { "id": "DV007", "name": "Răng sứ", "ChiPhi": 5000000, "description": "Làm mão răng sứ thẩm mỹ hoặc bảo vệ" },
-  { "id": "DV008", "name": "Implant", "ChiPhi": 35000000, "description": "Cấy ghép trụ Titanium phục hồi răng mất" },
-  { "id": "DV009", "name": "Tiểu phẫu", "ChiPhi": 1000000, "description": "Cắt chóp răng, loại bỏ u nang nhỏ" },
-  { "id": "DV010", "name": "Khám TMH", "ChiPhi": 200000, "description": "Khám và tư vấn tổng quát tình trạng răng miệng" }
+  {"id": 1, "TenDichVu": "Cạo vôi răng", "ChiPhi": 200000.0, "MoTa": "Làm sạch vôi răng"},
+  {"id": 2, "TenDichVu": "Nhổ răng sữa", "ChiPhi": 100000.0, "MoTa": "Nhổ răng cho trẻ em"},
+  {"id": 3, "TenDichVu": "Tẩy trắng răng", "ChiPhi": 1500000.0, "MoTa": "Công nghệ Laser Whitening"},
+  {"id": 4, "TenDichVu": "Trám răng Composite", "ChiPhi": 300000.0, "MoTa": "Trám thẩm mỹ"},
+  {"id": 5, "TenDichVu": "Niềng răng mắc cài kim loại", "ChiPhi": 25000000.0, "MoTa": "Trọn gói 2 hàm"}
 ]
