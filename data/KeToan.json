@@ -1,5 +1,6 @@
 [
-  { "MaKeToan": "ND008", "MaChuyenMon": "CM006", "NgayNhanViec": "2024-01-15" },
-  { "MaKeToan": "ND009", "MaChuyenMon": "CM006", "NgayNhanViec": "2023-05-20" },
-  { "MaKeToan": "ND010", "MaChuyenMon": "CM006", "NgayNhanViec": "2025-02-01" }
+  {
+    "id": 2, "HoVaTen": "Kế Toán Viên B", "NgaySinh": "1995-05-05", "GioiTinh": "NU", "SDT": "0900000002",
+    "type": "ketoan", "ChungChiHanhNghe": "CPA-12345"
+  }
 ]

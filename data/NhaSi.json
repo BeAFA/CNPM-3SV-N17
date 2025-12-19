@@ -1,5 +1,10 @@
 [
-  { "MaNhaSi": "ND001", "MaChuyenMon": "CM001", "NgayNhanViec": "2024-01-15", "Email": "dr.nguyena@nhakhoa.com" },
-  { "MaNhaSi": "ND002", "MaChuyenMon": "CM002", "NgayNhanViec": "2023-08-01", "Email": "dr.tranb@nhakhoa.com" },
-  { "MaNhaSi": "ND003", "MaChuyenMon": "CM005", "NgayNhanViec": "2025-01-23", "Email": "dr.lehc@nhakhoa.com" }
+  {
+    "id": 3, "HoVaTen": "Bác Sĩ C", "NgaySinh": "1985-02-14", "GioiTinh": "NAM", "SDT": "0900000003",
+    "type": "nhasi", "MaNhaSi": "NS001", "ChuyenMonId": 1
+  },
+  {
+    "id": 4, "HoVaTen": "Bác Sĩ D", "NgaySinh": "1988-11-20", "GioiTinh": "NU", "SDT": "0900000004",
+    "type": "nhasi", "MaNhaSi": "NS002", "ChuyenMonId": 2
+  }
 ]

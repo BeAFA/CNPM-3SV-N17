@@ -1,5 +1,5 @@
 [
-  { "MaPhieuDieuTri": "PDT01", "MaNhaSi": "ND001", "MaKhachHang": "ND004", "NgayLap": "2025-11-27", "ChuanDoan": "Viêm nướu, sâu kẽ răng 46" },
-  { "MaPhieuDieuTri": "PDT02", "MaNhaSi": "ND002", "MaKhachHang": "ND006", "NgayLap": "2025-11-27", "ChuanDoan": "Răng nhiễm màu, cần tẩy trắng" },
-  { "MaPhieuDieuTri": "PDT03", "MaNhaSi": "ND003", "MaKhachHang": "ND007", "NgayLap": "2025-11-28", "ChuanDoan": "Viêm tủy không hồi phục răng 37" }
+  {"id": 1, "KhachHangId": 5, "NhaSiId": 3, "ChuanDoan": "Sâu răng hàm dưới"},
+  {"id": 2, "KhachHangId": 6, "NhaSiId": 4, "ChuanDoan": "Răng hô nhẹ"},
+  {"id": 3, "KhachHangId": 7, "NhaSiId": 3, "ChuanDoan": "Viêm nướu"}
 ]

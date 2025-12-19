@@ -1,5 +1,5 @@
 [
-  { "MaToaThuoc": "TT001", "MaThuoc": "TH001", "SoNgayDung": "2025-12-03", "SoLuong": 14, "DonVi": "Viên", "GhiChu": "Uống 2 lần/ngày, sau ăn" },
-  { "MaToaThuoc": "TT001", "MaThuoc": "TH002", "SoNgayDung": "2025-12-03", "SoLuong": 10, "DonVi": "Viên", "GhiChu": "Uống khi đau" },
-  { "MaToaThuoc": "TT002", "MaThuoc": "TH003", "SoNgayDung": "2025-12-04", "SoLuong": 21, "DonVi": "Viên", "GhiChu": "Uống 3 lần/ngày, sau ăn" }
+  {"ToaThuocId": 1, "ThuocId": 1, "SoLuong": 10, "CachDung": "Sáng 1, Chiều 1", "ThanhTien": 10000.0},
+  {"ToaThuocId": 1, "ThuocId": 2, "SoLuong": 10, "CachDung": "Sáng 1, Chiều 1", "ThanhTien": 20000.0},
+  {"ToaThuocId": 2, "ThuocId": 4, "SoLuong": 1, "CachDung": "Súc miệng 2 lần/ngày", "ThanhTien": 120000.0}
 ]
