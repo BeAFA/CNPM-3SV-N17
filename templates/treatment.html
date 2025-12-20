@@ -1,60 +1,30 @@
+
+
 {% extends 'layout/base.html' %}
 {% block content %}
 
-<h2>Lập Phiếu Điều Trị</h2>
+<div class="container mt-4">
+    <h2>Lập Phiếu Điều Trị</h2>
+    <form method="post" action="{{ url_for('create_treatment') }}">
+        <div class="mb-3">
+            <label>Bác sĩ phụ trách:</label>
+            <input type="text" class="form-control" value="{{current_user.nguoi_dung.HoVaTen}}" readonly disabled>
+        </div>
+        <div class="mb-3">
+            <label for="customer" class="form-label">Chọn Khách hàng:</label>
+            <select class="form-select" id="customer" name="customer_id" required>
+                <option value="" selected disabled>-- Chọn bệnh nhân --</option>
+                {% for kh in den_cus %}
+                <option value="{{ kh.id }}">{{ kh.HoVaTen }} (SĐT: {{ kh.SDT }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Chẩn đoán:</label>
+            <textarea class="form-control" name="diagnosis" rows="3" placeholder="Nhập chẩn đoán bệnh..."></textarea>
+        </div>
 
-<form action="/treatment/add" method="POST">
-    <div class="mb-3">
-        <label for="service" class="form-label">Dịch vụ:</label>
-        <select class="form-select" id="service" name="service">
-            {% for dv in services %}
-            <option value="{{ dv.id }}">
-                {{ dv.TenDichVu }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-    <input type="number" name="cost" placeholder="Chi phí (VNĐ)" required>
-    <textarea name="note" placeholder="Ghi chú"></textarea>
-    <button type="submit">Thêm</button>
-</form>
-
-<table>
-    <tr>
-        <th>#</th>
-        <th>Dịch vụ</th>
-        <th>Chi phí</th>
-        <th>Ghi chú</th>
-        <th></th>
-    </tr>
-
-    {% for t in treatments %}
-    <tr>
-        <td>{{ loop.index }}</td>
-        <td>
-            {% for dv in services %}
-            {% if dv.MaDichVu == t.service %}
-            {{ dv.TenDichVu }}
-            {% endif %}
-            {% endfor %}
-        </td>
-        <td>{{ "{:,}".format(t.cost) }}</td>
-        <td>{{ t.note }}</td>
-        <td>
-            <form action="/treatment/delete/{{ t.id }}" method="POST">
-                <button>Xóa</button>
-            </form>
-        </td>
-    </tr>
-    {% else %}
-    <tr>
-        <td colspan="5">Chưa có phiếu điều trị</td>
-    </tr>
-    {% endfor %}
-</table>
-
-<form action="/treatment/save" method="POST">
-    <button type="submit">💾 Lưu phiếu điều trị</button>
-</form>
-
+        <button type="submit" class="btn btn-primary">Tạo phiếu & Thêm dịch vụ</button>
+    </form>
+</div>
 {% endblock %}

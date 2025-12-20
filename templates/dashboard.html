@@ -12,10 +12,10 @@
         footer { text-align: center; padding: 15px; color: #555; margin-top: 40px; }
     </style>
 <body>
-    <div class="container">
+<div class="container">
     <h1>Xin chào Bác sĩ</h1>
     <div class="card-container">
-        <div class="card" onclick="window.location.href='/treatment'">
+        <div class="card" onclick="window.location.href='{{ url_for('create_treatment') }}'">
             <i class="fas fa-file-medical"></i>
             Lập Phiếu Điều Trị
         </div>

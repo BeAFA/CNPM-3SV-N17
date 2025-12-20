@@ -2,46 +2,52 @@ import hashlib
 from os.path import exists
 import pdb
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, session, url_for, flash
 import math
-import dao
-from __init__ import app, login, db  # , admin
-from flask_login import login_user, current_user, logout_user
+import pdb
 import os
 import json
+import dao
+from flask import Flask, render_template, request, redirect, session, url_for, flash
+from __init__ import app, login, db  # , admin
+from flask_login import login_user, current_user, logout_user
 from datetime import datetime
-from models import  GioiTinh
 from sqlalchemy import func, extract
-from models import TaiKhoan
-from models import UserRole, NhaSi, KhachHang, KeToan, LichKham, PhieuDieuTri, ChiTietPhieuDieuTri, DichVu, Thuoc, LoThuoc, ChiTietToaThuoc
+from models import TaiKhoan, GioiTinh, UserRole, NhaSi, KhachHang, KeToan, LichKham, PhieuDieuTri, ChiTietPhieuDieuTri, DichVu, Thuoc, LoThuoc, ChiTietToaThuoc
 # Load dữ liệu dịch vụ từ file JSON
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 SERVICES_FILE = os.path.join(DATA_DIR, "DichVu.json")
+
 
 @app.context_processor
 def inject_globals():
     return {
         "services": dao.load_dich_vu(),
         "medicines": dao.load_dich_vu(),
+        "customers": dao.load_nguoi_dung(),
+        "dentists": dao.load_nhasi(),
         "UserRole": UserRole,
-        "gioitinh": GioiTinh,
-        "dentists": dao.load_nhasi()
+        "gioitinh": GioiTinh
+
     }
+
 
 # Helper tạo ID tự tăng
 def next_id(collection):
     return (collection[-1]["id"] + 1) if collection else 1
+
 
 @app.route("/")
 def home():
     page = request.args.get("page")
     return render_template("home.html", page=page)
 
+
 @app.route("/service/<ma>")
 def service_detail(ma):
     service = next((s for s in dao.load_dich_vu() if s.MaDichVu == ma), None)
     return render_template("service_detail.html", service=service)
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -65,7 +71,7 @@ def register():
                 taikhoan = TaiKhoan(
                     Email=gmail,
                     MatKhau=password,
-                    nguoi_dung = nguoidung
+                    nguoi_dung=nguoidung
                 )
                 try:
                     db.session.add(taikhoan)
@@ -122,24 +128,72 @@ def logout_my_user():
 
 
 # ------------------- Treatment -------------------
-@app.route("/treatment")
-def treatment():
+@app.route("/treatment/create", methods=["GET", "POST"])
+def create_treatment():
     username = current_user.nguoi_dung.HoVaTen
-    return render_template("treatment.html", username=username)
+    den_cus = dao.load_khach_hang_with_nha_si(current_user.id)
+    if request.method == "POST":
+        nha_si_id = current_user.id
+        khach_hang_id = request.form.get("customer_id")
+        chan_doan = request.form.get("diagnosis")
+
+        # 1. Tạo Phiếu Điều Trị (Master)
+        new_phieu = PhieuDieuTri(
+            NhaSiId=nha_si_id,
+            KhachHangId=khach_hang_id,
+            ChuanDoan=chan_doan
+        )
+        try:
+            db.session.add(new_phieu)
+            db.session.commit()
+            return redirect(url_for('treatment_detail', phieu_id=new_phieu.id))
+        except Exception as e:
+            db.session.rollback()
+            flash("Lỗi khi tạo phiếu: " + str(e), "danger")
+
+    return render_template("treatment.html", username=username, den_cus=den_cus)
 
 
-@app.route("/treatment/add", methods=["POST"])
-def treatment_add():
-    service = request.form.get("service")
-    cost = request.form.get("cost", "0").strip()
-    note = request.form.get("note", "").strip()
-    try:
-        cost_val = int(cost)
-    except:
-        cost_val = 0
-    item = {"id": next_id(service), "service": service, "cost": cost_val, "note": note}
-    treatments.append(item)
-    return redirect('/treatment')
+# --- ROUTE 2: CHI TIẾT PHIẾU & THÊM DỊCH VỤ (Bước 2) ---
+@app.route("/treatment/detail/<int:phieu_id>", methods=["GET", "POST"])
+def treatment_detail(phieu_id):
+    # Lấy thông tin phiếu để hiển thị
+    phieu = PhieuDieuTri.query.get_or_404(phieu_id)
+
+    # XỬ LÝ POST: Khi bác sĩ thêm dịch vụ vào phiếu này
+    if request.method == "POST":
+        dich_vu_id = request.form.get("service_id")
+        so_luong = request.form.get("times")
+        ghi_chu = request.form.get("note")
+        try:
+            # 2. Tạo Chi Tiết Phiếu (Detail)
+            new_detail = ChiTietPhieuDieuTri(
+                PhieuDieuTriId=phieu.id,  # Lấy ID từ phiếu hiện tại
+                DichVuId=dich_vu_id,
+                SoLuong=so_luong,
+                GhiChu=ghi_chu
+            )
+            db.session.add(new_detail)
+            db.session.commit()
+            flash("Đã thêm dịch vụ thành công!", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash("Lỗi thêm dịch vụ (có thể đã trùng dịch vụ): " + str(e), "danger")
+
+        # Redirect lại chính trang này để refresh danh sách
+        return redirect(url_for('treatment_detail', phieu_id=phieu_id))
+
+    # XỬ LÝ GET: Hiển thị form và danh sách dịch vụ
+    ds_dich_vu = DichVu.query.all()
+
+    # Lấy danh sách các chi tiết đã thêm để hiển thị bên dưới (nếu cần)
+    ds_chi_tiet = ChiTietPhieuDieuTri.query.filter_by(PhieuDieuTriId=phieu_id).all()
+
+    return render_template("treatment-detail.html",
+                           phieu=phieu,
+                           services=ds_dich_vu,
+                           details=ds_chi_tiet)
+
 
 @app.route("/treatment/delete/<int:item_id>", methods=["POST"])
 def treatment_delete(item_id):
@@ -153,9 +207,8 @@ def medicine():
     username = current_user.nguoi_dung.HoVaTen
     # Lấy danh sách thuốc từ CSDL
     available_medicines = dao.load_thuoc()
-    return render_template("medicine.html", username=username, medicines=medicines, available_medicines=available_medicines)
-
-
+    return render_template("medicine.html", username=username, medicines=medicines,
+                           available_medicines=available_medicines)
 
 @app.route("/medicine/add", methods=["POST"])
 def medicine_add():
@@ -177,7 +230,6 @@ def medicine_delete(item_id):
     global medicines
     medicines = [m for m in medicines if m["id"] != item_id]
     return redirect('/medicine')
-
 
 
 # ------------------- Appointment -------------------
@@ -233,7 +285,6 @@ def appointment():
                 return redirect("/MakeAppointment")
 
     return render_template("MakeAppointment.html")
-
 
 
 @login.user_loader
