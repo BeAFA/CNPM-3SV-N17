@@ -1,4 +1,7 @@
 import hashlib
+from os.path import exists
+import pdb
+from werkzeug.utils import secure_filename
 import math
 import pdb
 import os
@@ -8,12 +11,10 @@ from flask import Flask, render_template, request, redirect, session, url_for, f
 from __init__ import app, login, db  # , admin
 from flask_login import login_user, current_user, logout_user
 from datetime import datetime
-from models import TaiKhoan, UserRole, NguoiDung, GioiTinh, KhachHang, LichKham, ChiTietPhieuDieuTri, PhieuDieuTri, \
-    DichVu
-from os.path import exists
-from sqlalchemy import distinct
-
+from sqlalchemy import func, extract
+from models import TaiKhoan, GioiTinh, UserRole, NhaSi, KhachHang, KeToan, LichKham, PhieuDieuTri, ChiTietPhieuDieuTri, DichVu, Thuoc, LoThuoc, ChiTietToaThuoc
 # Load dữ liệu dịch vụ từ file JSON
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 SERVICES_FILE = os.path.join(DATA_DIR, "DichVu.json")
 
@@ -102,7 +103,8 @@ def login_my_user():
             login_user(user)
 
             if user.Role == UserRole.ADMIN:
-                return redirect('/Admin')
+                return redirect('/admin')  # chữ thường
+
             elif user.Role == UserRole.NHASI:
                 return redirect('/dashboard')
             else:
@@ -339,7 +341,137 @@ def cashier_page():
         return render_template("receipt.html", bill=bill)
 
     return render_template("cashier.html", treatments=treatments, medicines=medicines)
+@app.route("/profile")
+def profile():
+    if not current_user.is_authenticated:
+        return redirect("/login")
+    return render_template("profile.html", user=current_user)
+@app.route("/profile/update", methods=["POST"])
+def profile_update():
+    if not current_user.is_authenticated:
+        return redirect("/login")
 
+    user = current_user
 
+    # Lấy dữ liệu từ form
+    user.nguoi_dung.HoVaTen = request.form.get("HoVaTen")
+    user.nguoi_dung.GioiTinh = request.form.get("GioiTinh")
+    ngay_sinh = request.form.get("NgaySinh")
+    if ngay_sinh:
+        user.nguoi_dung.NgaySinh = datetime.strptime(ngay_sinh, "%Y-%m-%d").date()
+    user.nguoi_dung.SDT = request.form.get("SDT")
+
+    # Xử lý upload avatar nếu có
+    avatar_file = request.files.get("Avatar")
+    if avatar_file and avatar_file.filename != "":
+        filename = secure_filename(avatar_file.filename)
+        avatar_path = os.path.join("static", "uploads", filename)
+        avatar_file.save(avatar_path)
+        user.Avatar = "/" + avatar_path.replace("\\", "/")  # Đường dẫn URL
+
+    try:
+        db.session.commit()
+        flash("Cập nhật thông tin thành công!", "success")
+    except:
+        db.session.rollback()
+        flash("Có lỗi xảy ra, vui lòng thử lại.", "danger")
+
+    return redirect("/profile")
+
+@app.route("/admin")
+def admin_dashboard():
+    if not current_user.is_authenticated or current_user.Role != UserRole.ADMIN:
+        return redirect("/login")
+
+    # 1. Tổng số nhân sự
+    total_doctors = NhaSi.query.filter_by(active=True).count()
+    total_patients = KhachHang.query.filter_by(active=True).count()
+    total_accountants = KeToan.query.filter_by(active=True).count()
+
+    # 2. Lịch hẹn
+    today = datetime.today().date()
+    week_num = today.isocalendar()[1]
+    appointments_today = LichKham.query.filter(LichKham.NgayKham==today).count()
+    appointments_week = LichKham.query.filter(
+        extract('week', LichKham.NgayKham) == week_num,
+        extract('year', LichKham.NgayKham) == today.year
+    ).count()
+    appointments_month = LichKham.query.filter(
+        extract('month', LichKham.NgayKham) == today.month,
+        extract('year', LichKham.NgayKham) == today.year
+    ).count()
+
+    # 3. Hóa đơn và doanh thu (fix join với DichVu)
+    revenue_today = db.session.query(
+        func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
+    ).join(PhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
+     .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+     .filter(PhieuDieuTri.created_date == today).scalar() or 0
+
+    revenue_week = db.session.query(
+        func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
+    ).join(PhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
+     .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+     .filter(
+        extract('week', PhieuDieuTri.created_date) == week_num,
+        extract('year', PhieuDieuTri.created_date) == today.year
+    ).scalar() or 0
+
+    revenue_month = db.session.query(
+        func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
+    ).join(PhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
+     .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+     .filter(
+        extract('month', PhieuDieuTri.created_date) == today.month,
+        extract('year', PhieuDieuTri.created_date) == today.year
+    ).scalar() or 0
+
+    # Số hóa đơn
+    bills_today = PhieuDieuTri.query.filter(PhieuDieuTri.created_date==today).count()
+    bills_week = PhieuDieuTri.query.filter(
+        extract('week', PhieuDieuTri.created_date) == week_num,
+        extract('year', PhieuDieuTri.created_date) == today.year
+    ).count()
+    bills_month = PhieuDieuTri.query.filter(
+        extract('month', PhieuDieuTri.created_date) == today.month,
+        extract('year', PhieuDieuTri.created_date) == today.year
+    ).count()
+
+    # 4. Dịch vụ phổ biến
+    popular_services = db.session.query(
+        DichVu.TenDichVu, func.count(ChiTietPhieuDieuTri.DichVuId)
+    ).join(ChiTietPhieuDieuTri, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+     .group_by(DichVu.TenDichVu) \
+     .order_by(func.count(ChiTietPhieuDieuTri.DichVuId).desc()).limit(10).all()
+
+    # 5. Thuốc bán chạy
+    top_medicines = db.session.query(
+        Thuoc.TenThuoc, func.sum(ChiTietToaThuoc.SoLuong)
+    ).join(ChiTietToaThuoc, ChiTietToaThuoc.ThuocId == Thuoc.id) \
+     .group_by(Thuoc.TenThuoc) \
+     .order_by(func.sum(ChiTietToaThuoc.SoLuong).desc()).limit(10).all()
+
+    # Thuốc tồn kho thấp
+    low_stock_medicines = LoThuoc.query.filter(LoThuoc.SoLuongTon <= 10).all()
+
+    stats = {
+        "total_doctors": total_doctors,
+        "total_patients": total_patients,
+        "total_accountants": total_accountants,
+        "appointments_today": appointments_today,
+        "appointments_week": appointments_week,
+        "appointments_month": appointments_month,
+        "bills_today": bills_today,
+        "revenue_today": revenue_today,
+        "bills_week": bills_week,
+        "revenue_week": revenue_week,
+        "bills_month": bills_month,
+        "revenue_month": revenue_month,
+        "popular_services": popular_services,
+        "top_medicines": top_medicines,
+        "low_stock_medicines": low_stock_medicines
+    }
+
+    return render_template("admin.html", stats=stats)
 if __name__ == "__main__":
     app.run(debug=True)

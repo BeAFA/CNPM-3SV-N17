@@ -1,0 +1,155 @@
+{% extends  'layout/base.html'%}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Admin Dashboard</h2>
+
+    <!-- Tổng số nhân sự -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Bác sĩ</h5>
+                    <p class="card-text display-4">{{ stats.total_doctors }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Bệnh nhân</h5>
+                    <p class="card-text display-4">{{ stats.total_patients }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Kế toán</h5>
+                    <p class="card-text display-4">{{ stats.total_accountants }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lịch hẹn -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Lịch hẹn hôm nay</h5>
+                    <p class="card-text display-4">{{ stats.appointments_today }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Lịch hẹn tuần</h5>
+                    <p class="card-text display-4">{{ stats.appointments_week }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Lịch hẹn tháng</h5>
+                    <p class="card-text display-4">{{ stats.appointments_month }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hóa đơn và doanh thu -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Hóa đơn hôm nay</h5>
+                    <p class="card-text display-4">{{ stats.bills_today }}</p>
+                    <small>Doanh thu: {{ stats.revenue_today }} VNĐ</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Hóa đơn tuần</h5>
+                    <p class="card-text display-4">{{ stats.bills_week }}</p>
+                    <small>Doanh thu: {{ stats.revenue_week }} VNĐ</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Hóa đơn tháng</h5>
+                    <p class="card-text display-4">{{ stats.bills_month }}</p>
+                    <small>Doanh thu: {{ stats.revenue_month }} VNĐ</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dịch vụ phổ biến -->
+    <h4 class="mt-4">Dịch vụ phổ biến</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Tên dịch vụ</th>
+                <th>Số lần sử dụng</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for svc, count in stats.popular_services %}
+            <tr>
+                <td>{{ svc }}</td>
+                <td>{{ count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Thuốc bán chạy -->
+    <h4 class="mt-4">Thuốc bán chạy</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Tên thuốc</th>
+                <th>Số lượng đã bán</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for med, sold in stats.top_medicines %}
+            <tr>
+                <td>{{ med }}</td>
+                <td>{{ sold }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Thuốc tồn kho thấp -->
+    <h4 class="mt-4 text-danger">Thuốc tồn kho thấp (≤10)</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Mã lô</th>
+                <th>Tên thuốc</th>
+                <th>Số lượng tồn</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lot in stats.low_stock_medicines %}
+            <tr>
+                <td>{{ lot.MaLoThuoc }}</td>
+                <td>{{ lot.loai_thuoc.TenThuoc }}</td>
+                <td>{{ lot.SoLuongTon }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

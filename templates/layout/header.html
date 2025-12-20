@@ -30,10 +30,11 @@
         </a>
 
         {% if current_user.is_authenticated %}
-        <a href="/login">
-            <img src="{{ current_user.Avatar }}" width="28">
-            Chào {{ current_user.nguoi_dung.HoVaTen }}!
-        </a>
+        <a href="/profile">
+    <img src="{{ current_user.Avatar }}" width="28">
+    Chào {{ current_user.nguoi_dung.HoVaTen }}!
+</a>
+
 
         <a href="/logout">
             <img src="https://cdn-icons-png.flaticon.com/128/1286/1286907.png" width="25">
