@@ -136,12 +136,13 @@ class PhieuDieuTri(Base):
     ChuanDoan = Column(String(250))
 
     toa_thuoc = relationship('ToaThuoc', backref='phieu_dieu_tri', uselist=False, lazy=True)
+    khach_hang = relationship('KhachHang', backref='ds_phieu_dieu_tri', uselist=False, lazy=True)
 
 class ChiTietPhieuDieuTri(db.Model):
     __tablename__ = 'ChiTietPhieuDieuTri'
 
     PhieuDieuTriId = Column(Integer, ForeignKey('PhieuDieuTri.id'), primary_key=True, nullable=False)
-    DichVuId = Column(Integer, ForeignKey('DichVu.id'), primary_key=True, nullable=False)
+    DichVuId = Column(Integer, ForeignKey('DichVu.id'), nullable=False)
     SoLuong = Column(Integer, default=1)
     GhiChu = Column(String(255))
 
