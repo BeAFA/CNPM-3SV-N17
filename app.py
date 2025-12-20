@@ -1,7 +1,7 @@
 import hashlib
 from os.path import exists
 import pdb
-
+from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 import math
 import dao
@@ -286,7 +286,42 @@ def cashier_page():
         return render_template("receipt.html", bill=bill)
 
     return render_template("cashier.html", treatments=treatments, medicines=medicines)
+@app.route("/profile")
+def profile():
+    if not current_user.is_authenticated:
+        return redirect("/login")
+    return render_template("profile.html", user=current_user)
+@app.route("/profile/update", methods=["POST"])
+def profile_update():
+    if not current_user.is_authenticated:
+        return redirect("/login")
 
+    user = current_user
+
+    # Lấy dữ liệu từ form
+    user.nguoi_dung.HoVaTen = request.form.get("HoVaTen")
+    user.nguoi_dung.GioiTinh = request.form.get("GioiTinh")
+    ngay_sinh = request.form.get("NgaySinh")
+    if ngay_sinh:
+        user.nguoi_dung.NgaySinh = datetime.strptime(ngay_sinh, "%Y-%m-%d").date()
+    user.nguoi_dung.SDT = request.form.get("SDT")
+
+    # Xử lý upload avatar nếu có
+    avatar_file = request.files.get("Avatar")
+    if avatar_file and avatar_file.filename != "":
+        filename = secure_filename(avatar_file.filename)
+        avatar_path = os.path.join("static", "uploads", filename)
+        avatar_file.save(avatar_path)
+        user.Avatar = "/" + avatar_path.replace("\\", "/")  # Đường dẫn URL
+
+    try:
+        db.session.commit()
+        flash("Cập nhật thông tin thành công!", "success")
+    except:
+        db.session.rollback()
+        flash("Có lỗi xảy ra, vui lòng thử lại.", "danger")
+
+    return redirect("/profile")
 
 
 if __name__ == "__main__":
