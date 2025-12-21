@@ -1,0 +1,13 @@
+{% extends 'layout/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h3>Sửa dịch vụ</h3>
+    <form method="post">
+        <input name="TenDichVu" value="{{ dv.TenDichVu }}" class="form-control mb-2" required>
+        <input name="ChiPhi" value="{{ dv.ChiPhi }}" class="form-control mb-2" type="number" required>
+        <textarea name="MoTa" class="form-control mb-2">{{ dv.MoTa }}</textarea>
+        <button class="btn btn-warning">Cập nhật</button>
+        <a href="/admin/services" class="btn btn-secondary">Hủy</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4 px-4">
+
+    <div class="card">
+        <div class="card-body">
+
+            <h3 class="mb-4">Quản lý lô thuốc</h3>
+
+            <!-- NÚT THÊM -->
+            <form action="/admin/lo-thuoc/add" method="post" class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <input name="ma_lo_thuoc" class="form-control" placeholder="Mã lô" required>
+                </div>
+
+                <div class="col-md-2">
+                    <input name="thuoc_id" class="form-control" placeholder="Thuốc ID" required>
+                </div>
+
+                <div class="col-md-2">
+                    <input name="so_luong_nhap" class="form-control" type="number" placeholder="SL nhập">
+                </div>
+
+                <div class="col-md-2">
+                    <input name="so_luong_ton" class="form-control" type="number" placeholder="SL tồn">
+                </div>
+
+                <div class="col-md-2">
+                    <input name="han_su_dung" class="form-control" type="date">
+                </div>
+
+                <div class="col-md-1">
+                    <button class="btn btn-primary w-100">Thêm</button>
+                </div>
+            </form>
+
+            <!-- DANH SÁCH -->
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã lô</th>
+                        <th>Thuốc ID</th>
+                        <th>SL nhập</th>
+                        <th>SL tồn</th>
+                        <th>Hạn sử dụng</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lo in lo_thuoc %}
+                    <tr>
+                        <td>{{ lo.MaLoThuoc }}</td>
+                        <td>{{ lo.ThuocId }}</td>
+                        <td>{{ lo.SoLuongNhap }}</td>
+                        <td>{{ lo.SoLuongTon }}</td>
+                        <td>{{ lo.HanSuDung }}</td>
+                        <td>
+                            <a href="/admin/lo-thuoc/delete/{{ lo.MaLoThuoc }}"
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('Xóa lô thuốc này?')">
+                                Hủy
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

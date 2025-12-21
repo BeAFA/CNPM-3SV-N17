@@ -1,0 +1,13 @@
+{% extends 'layout/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h3>Thêm dịch vụ</h3>
+    <form method="post">
+        <input name="TenDichVu" class="form-control mb-2" placeholder="Tên dịch vụ" required>
+        <input name="ChiPhi" class="form-control mb-2" placeholder="Chi phí" type="number" required>
+        <textarea name="MoTa" class="form-control mb-2" placeholder="Mô tả"></textarea>
+        <button class="btn btn-success">Lưu</button>
+        <a href="/admin/services" class="btn btn-secondary">Hủy</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,6 +1,12 @@
-{% extends  'layout/base.html'%}
+{% extends 'layout/base.html' %}
 
 {% block title %}Admin Dashboard{% endblock %}
+
+{% block header %}
+{% include 'layout/header.html' %}
+<!-- Liên kết CSS riêng cho Admin -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -93,63 +99,68 @@
         </div>
     </div>
 
-    <!-- Dịch vụ phổ biến -->
-    <h4 class="mt-4">Dịch vụ phổ biến</h4>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Tên dịch vụ</th>
-                <th>Số lần sử dụng</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for svc, count in stats.popular_services %}
-            <tr>
-                <td>{{ svc }}</td>
-                <td>{{ count }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Bọc toàn bộ phần thống kê dịch vụ và thuốc vào khung trắng -->
+    <div class="stats-box p-4 mb-4">
 
-    <!-- Thuốc bán chạy -->
-    <h4 class="mt-4">Thuốc bán chạy</h4>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Tên thuốc</th>
-                <th>Số lượng đã bán</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for med, sold in stats.top_medicines %}
-            <tr>
-                <td>{{ med }}</td>
-                <td>{{ sold }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <!-- Dịch vụ phổ biến -->
+        <h4 class="mt-4">Dịch vụ phổ biến</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Tên dịch vụ</th>
+                    <th>Số lần sử dụng</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for svc, count in stats.popular_services %}
+                <tr>
+                    <td>{{ svc }}</td>
+                    <td>{{ count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-    <!-- Thuốc tồn kho thấp -->
-    <h4 class="mt-4 text-danger">Thuốc tồn kho thấp (≤10)</h4>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Mã lô</th>
-                <th>Tên thuốc</th>
-                <th>Số lượng tồn</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for lot in stats.low_stock_medicines %}
-            <tr>
-                <td>{{ lot.MaLoThuoc }}</td>
-                <td>{{ lot.loai_thuoc.TenThuoc }}</td>
-                <td>{{ lot.SoLuongTon }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <!-- Thuốc bán chạy -->
+        <h4 class="mt-4">Thuốc bán chạy</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Tên thuốc</th>
+                    <th>Số lượng đã bán</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for med, sold in stats.top_medicines %}
+                <tr>
+                    <td>{{ med }}</td>
+                    <td>{{ sold }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Thuốc tồn kho thấp -->
+        <h4 class="mt-4 text-danger">Thuốc tồn kho thấp (≤10)</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Mã lô</th>
+                    <th>Tên thuốc</th>
+                    <th>Số lượng tồn</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lot in stats.low_stock_medicines %}
+                <tr>
+                    <td>{{ lot.MaLoThuoc }}</td>
+                    <td>{{ lot.loai_thuoc.TenThuoc }}</td>
+                    <td>{{ lot.SoLuongTon }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
 </div>
 {% endblock %}

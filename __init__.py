@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 
+
 app = Flask(__name__)
 app.secret_key = "nhungchubetliet=qsrdhuqwh123123ipsdjfg098suf8923u549ihg23wefdhgcyvuiadf6uqwyghryitu32e78y5gui235vgrtf"
 

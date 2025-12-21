@@ -1,0 +1,76 @@
+{% extends 'layout/base.html' %}
+{% block content %}
+<div class="container-fluid mt-4 px-4">
+
+<div class="card">
+<div class="card-body">
+
+<h3 class="mb-4">Quản lý tài khoản</h3>
+
+<!-- THÊM TÀI KHOẢN -->
+<form method="post" action="/admin/accounts/add" class="mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <select name="nguoidung_id" class="form-control" required>
+                <option value="">-- Chọn người dùng --</option>
+                {% for nd in nguoidung_chua_co_tk %}
+                <option value="{{ nd.id }}">{{ nd.HoVaTen }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <input type="email" name="email" class="form-control" placeholder="Email" required>
+        </div>
+
+        <div class="col-md-2">
+            <input type="password" name="password" class="form-control" placeholder="Mật khẩu" required>
+        </div>
+
+        <div class="col-md-2">
+            <select name="role" class="form-control">
+                <option value="KHACHHANG">Khách hàng</option>
+                <option value="NHASI">Nha sĩ</option>
+                <option value="KETOAN">Kế toán</option>
+                <option value="ADMIN">Admin</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <button class="btn btn-success w-100">Thêm</button>
+        </div>
+    </div>
+</form>
+
+<!-- DANH SÁCH -->
+<table class="table table-bordered">
+<thead class="table-light">
+<tr>
+    <th>Email</th>
+    <th>Họ tên</th>
+    <th>Vai trò</th>
+    <th>Thao tác</th>
+</tr>
+</thead>
+<tbody>
+{% for tk in accounts %}
+<tr>
+    <td>{{ tk.Email }}</td>
+    <td>{{ tk.nguoi_dung.HoVaTen }}</td>
+    <td>{{ tk.Role.value }}</td>
+    <td>
+        <a href="/admin/accounts/delete/{{ tk.id }}"
+           class="btn btn-sm btn-danger"
+           onclick="return confirm('Xóa tài khoản này?')">
+           Xóa
+        </a>
+    </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+{% endblock %}
