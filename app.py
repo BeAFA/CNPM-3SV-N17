@@ -2,7 +2,6 @@ import hashlib
 from os.path import exists
 import pdb
 from __init__ import app
-
 from werkzeug.utils import secure_filename
 import math
 import pdb
@@ -14,7 +13,7 @@ from __init__ import app, login, db  # , admin
 from flask_login import login_user, current_user, logout_user, login_required
 from datetime import datetime
 from sqlalchemy import func, extract
-from models import TaiKhoan, GioiTinh, UserRole, NhaSi, KhachHang, KeToan, LichKham, PhieuDieuTri, ChiTietPhieuDieuTri, DichVu, Thuoc, LoThuoc, ChiTietToaThuoc
+from models import TaiKhoan, GioiTinh, UserRole, NhaSi, KhachHang, KeToan, LichKham, PhieuDieuTri, ChiTietPhieuDieuTri, DichVu, Thuoc, LoThuoc, ChiTietToaThuoc,NguoiDung
 # Load dữ liệu dịch vụ từ file JSON
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -579,6 +578,112 @@ def admin_delete_service(service_id):
         flash("Lỗi xóa dịch vụ: " + str(e), "danger")
 
     return redirect("/admin/services")
+@app.route("/admin/lo-thuoc")
+@login_required
+def admin_lo_thuoc():
+    if current_user.Role.name != "ADMIN":
+        return redirect("/")
+
+    lo_thuoc = LoThuoc.query.all()
+    return render_template("admin/lo_thuoc.html", lo_thuoc=lo_thuoc)
+@app.route("/admin/lo-thuoc/add", methods=["POST"])
+@login_required
+def add_lo_thuoc():
+    if current_user.Role.name != "ADMIN":
+        return redirect("/")
+
+    ma_lo = request.form.get("ma_lo_thuoc")
+    thuoc_id = request.form.get("thuoc_id")
+    so_luong_nhap = request.form.get("so_luong_nhap")
+    so_luong_ton = request.form.get("so_luong_ton")
+    han_su_dung = request.form.get("han_su_dung")
+
+    lo = LoThuoc(
+        MaLoThuoc=ma_lo,
+        ThuocId=thuoc_id,
+        SoLuongNhap=so_luong_nhap,
+        SoLuongTon=so_luong_ton,
+        HanSuDung=datetime.strptime(han_su_dung, "%Y-%m-%d") if han_su_dung else None
+    )
+
+    db.session.add(lo)
+    db.session.commit()
+
+    return redirect("/admin/lo-thuoc")
+@app.route("/admin/lo-thuoc/delete/<string:ma_lo>")
+@login_required
+def delete_lo_thuoc(ma_lo):
+    if current_user.Role.name != "ADMIN":
+        return redirect("/")
+
+    lo = LoThuoc.query.get(ma_lo)
+    if lo:
+        db.session.delete(lo)
+        db.session.commit()
+
+    return redirect("/admin/lo-thuoc")
+@app.route("/admin/accounts")
+@login_required
+def admin_accounts():
+    if current_user.Role != UserRole.ADMIN:
+        return redirect("/")
+
+    accounts = TaiKhoan.query.all()
+    nguoidung_chua_co_tk = NguoiDung.query.filter(~NguoiDung.id.in_(
+        db.session.query(TaiKhoan.NguoiDungId)
+    )).all()
+
+    return render_template(
+        "Admin/admin_accounts.html",
+        accounts=accounts,
+        nguoidung_chua_co_tk=nguoidung_chua_co_tk
+    )
+@app.route("/admin/accounts/add", methods=["POST"])
+@login_required
+def admin_add_account():
+    if current_user.Role != UserRole.ADMIN:
+        return redirect("/")
+
+    nguoidung_id = request.form.get("nguoidung_id")
+    email = request.form.get("email")
+    password = request.form.get("password")
+    role = request.form.get("role")
+
+    hashed = hashlib.md5(password.encode("utf-8")).hexdigest()
+
+    tk = TaiKhoan(
+        NguoiDungId=nguoidung_id,
+        Email=email,
+        MatKhau=hashed,
+        Role=UserRole[role]
+    )
+
+    try:
+        db.session.add(tk)
+        db.session.commit()
+        flash("Thêm tài khoản thành công!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Lỗi thêm tài khoản: " + str(e), "danger")
+
+    return redirect("/admin/accounts")
+@app.route("/admin/accounts/delete/<int:account_id>")
+@login_required
+def admin_delete_account(account_id):
+    if current_user.Role != UserRole.ADMIN:
+        return redirect("/")
+
+    tk = TaiKhoan.query.get_or_404(account_id)
+
+    try:
+        db.session.delete(tk)
+        db.session.commit()
+        flash("Xóa tài khoản thành công!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Không thể xóa tài khoản: " + str(e), "danger")
+
+    return redirect("/admin/accounts")
 
 if __name__ == "__main__":
     app.run(debug=True)
