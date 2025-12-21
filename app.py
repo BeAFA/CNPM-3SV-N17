@@ -1,6 +1,8 @@
 import hashlib
 from os.path import exists
 import pdb
+from __init__ import app
+
 from werkzeug.utils import secure_filename
 import math
 import pdb
@@ -9,7 +11,7 @@ import json
 import dao
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 from __init__ import app, login, db  # , admin
-from flask_login import login_user, current_user, logout_user
+from flask_login import login_user, current_user, logout_user, login_required
 from datetime import datetime
 from sqlalchemy import func, extract
 from models import TaiKhoan, GioiTinh, UserRole, NhaSi, KhachHang, KeToan, LichKham, PhieuDieuTri, ChiTietPhieuDieuTri, DichVu, Thuoc, LoThuoc, ChiTietToaThuoc
@@ -473,7 +475,110 @@ def admin_dashboard():
     }
 
     return render_template("Admin/admin.html", stats=stats)
+@app.route("/admin/users/staff")
+def admin_staff():
+    if not current_user.is_authenticated or current_user.Role != UserRole.ADMIN:
+        return redirect("/login")
 
+    doctors = NhaSi.query.filter_by(active=True).all()
+    accountants = KeToan.query.filter_by(active=True).all()
+
+    return render_template(
+        "Admin/admin_staff.html",
+        doctors=doctors,
+        accountants=accountants
+    )
+@app.route("/admin/users/customers")
+def admin_customers():
+    if not current_user.is_authenticated or current_user.Role != UserRole.ADMIN:
+        return redirect("/login")
+
+    customers = KhachHang.query.filter_by(active=True).all()
+
+    return render_template(
+        "Admin/admin_customers.html",
+        customers=customers
+    )
+
+@app.route('/admin/services')
+@login_required
+def admin_services():
+    if current_user.Role != UserRole.ADMIN:
+        return "Unauthorized", 403
+
+    services = DichVu.query.all()
+    return render_template('admin/services.html', services=services)
+@app.route("/admin/services/add", methods=["GET", "POST"])
+@login_required
+def admin_add_service():
+    if current_user.Role != UserRole.ADMIN:
+        return "Unauthorized", 403
+
+    if request.method == "POST":
+        ten = request.form.get("TenDichVu")
+        chiphi = request.form.get("ChiPhi")
+        mota = request.form.get("MoTa")
+
+        try:
+            dv = DichVu(
+                TenDichVu=ten,
+                ChiPhi=float(chiphi),
+                MoTa=mota
+            )
+            db.session.add(dv)
+            db.session.commit()
+            flash("Thêm dịch vụ thành công!", "success")
+            return redirect("/admin/services")
+        except Exception as e:
+            db.session.rollback()
+            flash("Lỗi thêm dịch vụ: " + str(e), "danger")
+
+    return render_template("Admin/service_add.html")
+@app.route("/admin/services/edit/<int:service_id>", methods=["GET", "POST"])
+@login_required
+def admin_edit_service(service_id):
+    if current_user.Role != UserRole.ADMIN:
+        return "Unauthorized", 403
+
+    dv = DichVu.query.get_or_404(service_id)
+
+    if request.method == "POST":
+        dv.TenDichVu = request.form.get("TenDichVu")
+        dv.ChiPhi = float(request.form.get("ChiPhi"))
+        dv.MoTa = request.form.get("MoTa")
+
+        try:
+            db.session.commit()
+            flash("Cập nhật dịch vụ thành công!", "success")
+            return redirect("/admin/services")
+        except Exception as e:
+            db.session.rollback()
+            flash("Lỗi cập nhật: " + str(e), "danger")
+
+    return render_template("Admin/service_edit.html", dv=dv)
+@app.route("/admin/services/delete/<int:service_id>")
+@login_required
+def admin_delete_service(service_id):
+    if current_user.Role != UserRole.ADMIN:
+        return "Unauthorized", 403
+
+    dv = DichVu.query.get_or_404(service_id)
+
+    # Kiểm tra dịch vụ đã được dùng chưa
+    used = ChiTietPhieuDieuTri.query.filter_by(DichVuId=service_id).first()
+    if used:
+        flash("Không thể xóa! Dịch vụ đã được sử dụng.", "danger")
+        return redirect("/admin/services")
+
+    try:
+        db.session.delete(dv)
+        db.session.commit()
+        flash("Xóa dịch vụ thành công!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Lỗi xóa dịch vụ: " + str(e), "danger")
+
+    return redirect("/admin/services")
 
 if __name__ == "__main__":
     app.run(debug=True)

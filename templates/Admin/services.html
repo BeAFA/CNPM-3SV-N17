@@ -1,0 +1,43 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4 px-4">
+
+    <div class="card">
+        <div class="card-body">
+
+            <h3 class="mb-4">Quản lý dịch vụ</h3>
+
+            <a href="/admin/services/add" class="btn btn-primary mb-3">
+                Thêm dịch vụ
+            </a>
+
+            <table class="table table-bordered table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên dịch vụ</th>
+                        <th>Chi phí</th>
+                        <th>Mô tả</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dv in services %}
+                    <tr>
+                        <td>{{ dv.TenDichVu }}</td>
+                        <td>{{ "{:,.0f}".format(dv.ChiPhi) }} đ</td>
+                        <td>{{ dv.MoTa }}</td>
+                        <td>
+                            <a href="/admin/services/edit/{{ dv.id }}" class="btn btn-sm btn-warning">Sửa</a>
+                            <a href="/admin/services/delete/{{ dv.id }}" class="btn btn-sm btn-danger">Xóa</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
