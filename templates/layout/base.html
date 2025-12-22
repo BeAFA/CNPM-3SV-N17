@@ -11,27 +11,23 @@
             crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/body.css') }}">
 </head>
-
 <body>
-
 {%block header%}
 {%include 'layout/header.html'%}
 {%endblock%}
-
-
 <div class="container">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/body.css') }}">
+
     {%block content required%}
 
 
     {%endblock%}
 </div>
-
+<footer>
 {%block footer%}
 {%include 'layout/footer.html'%}
 {%endblock%}
+</footer>
 </body>
 </html>

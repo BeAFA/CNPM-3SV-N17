@@ -1,31 +1,18 @@
-{%extends 'layout/base.html'%}
-
-{%block content%}
+{% extends 'layout/base.html' %}
+{% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/box_form.css') }}">
-<style>
-        .container { max-width: 1000px; margin: 30px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 0 15px #ccc; }
-        h1 { color: #003057; }
-        .card-container { display: flex; gap: 20px; flex-wrap: wrap; }
-        .card { flex: 1 1 300px; background: #007bff; color: white; padding: 30px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; font-size: 18px; }
-        .card i { font-size: 40px; margin-bottom: 10px; display: block; }
-        .card:hover { background-color: #0056b3; }
-        footer { text-align: center; padding: 15px; color: #555; margin-top: 40px; }
-    </style>
-<body>
-<div class="container">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<div class="container-custom">
     <h1>Xin chào Bác sĩ</h1>
     <div class="card-container">
         <div class="card" onclick="window.location.href='{{ url_for('create_treatment') }}'">
             <i class="fas fa-file-medical"></i>
             Lập Phiếu Điều Trị
         </div>
-
-        <div class="card" onclick="window.location.href='/medicine'">
+        <div class="card" onclick="window.location.href='{{ url_for('medicine_page') }}'">
             <i class="fas fa-pills"></i>
-            Quản Lý Thuốc
+            Lập Toa Thuốc
         </div>
     </div>
 </div>
-</body>
 {% endblock %}
-</html>

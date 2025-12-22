@@ -8,12 +8,14 @@ import pdb
 import os
 import json
 import dao
-from flask import Flask, render_template, request, redirect, session, url_for, flash
+from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
 from __init__ import app, login, db  # , admin
 from flask_login import login_user, current_user, logout_user, login_required
 from datetime import datetime
-from sqlalchemy import func, extract
-from models import TaiKhoan, GioiTinh, UserRole, NhaSi, KhachHang, KeToan, LichKham, PhieuDieuTri, ChiTietPhieuDieuTri, DichVu, Thuoc, LoThuoc, ChiTietToaThuoc,NguoiDung
+from sqlalchemy import func, extract, or_
+from models import TaiKhoan, GioiTinh, UserRole, NhaSi, KhachHang, KeToan, LichKham, PhieuDieuTri, ChiTietPhieuDieuTri, \
+    DichVu, Thuoc, LoThuoc, ChiTietToaThuoc, NguoiDung, ToaThuoc, HoaDon
+
 # Load dữ liệu dịch vụ từ file JSON
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -100,14 +102,13 @@ def login_my_user():
         user = dao.auth_user(gmail, password)
 
         if user:
-
             login_user(user)
-
             if user.Role == UserRole.ADMIN:
                 return redirect('/admin')  # chữ thường
-
             elif user.Role == UserRole.NHASI:
                 return redirect('/dashboard')
+            elif user.Role == UserRole.KETOAN:
+                return redirect('/cashier')
             else:
                 return redirect('/MakeAppointment')
         else:
@@ -116,16 +117,16 @@ def login_my_user():
     return render_template("login.html", err_msg=err_msg)
 
 
-@app.route("/dashboard")
-def dashboard():
-    username = current_user.nguoi_dung.HoVaTen
-    return render_template("dashboard.html", username=username)
-
-
 @app.route('/logout')
 def logout_my_user():
     logout_user()
     return redirect('/')
+
+
+@app.route("/dashboard")
+def dashboard():
+    username = current_user.nguoi_dung.HoVaTen
+    return render_template("dashboard.html", username=username)
 
 
 # ------------------- Treatment -------------------
@@ -137,7 +138,6 @@ def create_treatment():
         nha_si_id = current_user.id
         khach_hang_id = request.form.get("customer_id")
         chan_doan = request.form.get("diagnosis")
-
         # 1. Tạo Phiếu Điều Trị (Master)
         new_phieu = PhieuDieuTri(
             NhaSiId=nha_si_id,
@@ -151,7 +151,6 @@ def create_treatment():
         except Exception as e:
             db.session.rollback()
             flash("Lỗi khi tạo phiếu: " + str(e), "danger")
-
     return render_template("treatment.html", username=username, den_cus=den_cus)
 
 
@@ -160,77 +159,191 @@ def create_treatment():
 def treatment_detail(phieu_id):
     # Lấy thông tin phiếu để hiển thị
     phieu = PhieuDieuTri.query.get_or_404(phieu_id)
-
     # XỬ LÝ POST: Khi bác sĩ thêm dịch vụ vào phiếu này
     if request.method == "POST":
         dich_vu_id = request.form.get("service_id")
         so_luong = request.form.get("times")
         ghi_chu = request.form.get("note")
         try:
-            # 2. Tạo Chi Tiết Phiếu (Detail)
-            new_detail = ChiTietPhieuDieuTri(
-                PhieuDieuTriId=phieu.id,  # Lấy ID từ phiếu hiện tại
-                DichVuId=dich_vu_id,
-                SoLuong=so_luong,
-                GhiChu=ghi_chu
-            )
-            db.session.add(new_detail)
-            db.session.commit()
-            flash("Đã thêm dịch vụ thành công!", "success")
+            exists = ChiTietPhieuDieuTri.query.filter_by(
+                PhieuDieuTriId=phieu.id,
+                DichVuId=dich_vu_id
+            ).first()
+            if exists:
+                flash("Dịch vụ này đã có trong phiếu, vui lòng chỉnh sửa số lượng thay vì thêm mới.", "warning")
+            else:
+                # 2. Tạo Chi Tiết Phiếu (Detail)
+                new_detail = ChiTietPhieuDieuTri(
+                    PhieuDieuTriId=phieu.id,  # Lấy ID từ phiếu hiện tại
+                    DichVuId=dich_vu_id,
+                    SoLuong=so_luong,
+                    GhiChu=ghi_chu
+                )
+                db.session.add(new_detail)
+                db.session.commit()
+                flash("Đã thêm dịch vụ thành công!", "success")
         except Exception as e:
             db.session.rollback()
             flash("Lỗi thêm dịch vụ (có thể đã trùng dịch vụ): " + str(e), "danger")
-
         # Redirect lại chính trang này để refresh danh sách
         return redirect(url_for('treatment_detail', phieu_id=phieu_id))
-
     # XỬ LÝ GET: Hiển thị form và danh sách dịch vụ
     ds_dich_vu = DichVu.query.all()
-
     # Lấy danh sách các chi tiết đã thêm để hiển thị bên dưới (nếu cần)
     ds_chi_tiet = ChiTietPhieuDieuTri.query.filter_by(PhieuDieuTriId=phieu_id).all()
-
     return render_template("treatment-detail.html",
                            phieu=phieu,
                            services=ds_dich_vu,
                            details=ds_chi_tiet)
 
 
-@app.route("/treatment/delete/<int:item_id>", methods=["POST"])
-def treatment_delete(item_id):
-    global treatments
-    treatments = [t for t in treatments if t["id"] != item_id]
-    return redirect('/treatment')
+@app.route("/treatment/delete-detail/<int:phieu_id>/<int:dich_vu_id>", methods=["POST"])
+def delete_treatment_detail(phieu_id, dich_vu_id):
+    chi_tiet = ChiTietPhieuDieuTri.query.get_or_404((phieu_id, dich_vu_id))
+    try:
+        db.session.delete(chi_tiet)
+        db.session.commit()
+        flash("Đã xóa dịch vụ khỏi phiếu!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Lỗi khi xóa: " + str(e), "danger")
+    # Redirect về lại trang chi tiết phiếu
+    return redirect(url_for('treatment_detail', phieu_id=phieu_id))
+
 
 # ------------------- Medicine -------------------
 @app.route("/medicine")
-def medicine():
-    username = current_user.nguoi_dung.HoVaTen
-    # Lấy danh sách thuốc từ CSDL
-    available_medicines = dao.load_thuoc()
-    return render_template("medicine.html", username=username, medicines=medicines,
-                           available_medicines=available_medicines)
+@app.route("/medicine/<int:phieu_id>")
+def medicine_page(phieu_id=None):
+    # TRƯỜNG HỢP 1: Chưa có ID -> Hiện danh sách để chọn
+    if phieu_id is None:
+        # SỬA LỖI: Model PhieuDieuTri không có NgayKham, nên sort theo ID giảm dần
+        ds_phieu = PhieuDieuTri.query.outerjoin(HoaDon).filter(
+            or_(
+                HoaDon.id is None,  # Chưa tạo hóa đơn
+                HoaDon.DaThanhToan == False  # Có hóa đơn nhưng chưa trả tiền
+            )
+        ).order_by(PhieuDieuTri.id.desc()).all()
+        return render_template("medicine.html",
+                               ds_phieu=ds_phieu,
+                               mode="select")
+    # TRƯỜNG HỢP 2: Đã có ID -> Kê thuốc
+    toa_thuoc = ToaThuoc.query.filter_by(PhieuDieuTriId=phieu_id).first()
+    if not toa_thuoc:
+        toa_thuoc = ToaThuoc(PhieuDieuTriId=phieu_id)
+        db.session.add(toa_thuoc)
+        db.session.commit()
+    medicines_data = dao.get_available_medicines()
+    return render_template("medicine.html",
+                           toa_thuoc=toa_thuoc,
+                           medicines=medicines_data,
+                           mode="detail")
+
 
 @app.route("/medicine/add", methods=["POST"])
 def medicine_add():
-    name = request.form.get("name", "").strip()
-    dosage = request.form.get("dosage", "").strip()
-    days = request.form.get("days", "0").strip()
-    unit = request.form.get("unit", "").strip()
     try:
-        days_val = int(days)
-    except:
-        days_val = 0
-    item = {"id": next_id(medicines), "name": name, "dosage": dosage, "days": days_val, "unit": unit}
-    medicines.append(item)
-    return redirect('/medicine')
+        toa_thuoc_id = request.form.get("toa_thuoc_id")
+        current_toa = dao.get_toa_thuoc_by_id(toa_thuoc_id)
+        thuoc_id = int(request.form.get("thuoc_id"))
+        lieu_dung = float(request.form.get("lieu_dung"))
+        so_ngay = int(request.form.get("so_ngay"))
+        ghi_chu = request.form.get("ghi_chu")
+        # 1. Tính số lượng MỚI đang muốn thêm
+        so_luong_moi = int(math.ceil(lieu_dung * so_ngay))
+        # 2. Tính số lượng thuốc này ĐÃ CÓ trong bảng kê (nhưng chưa lưu kho)
+        # Tìm xem trong toa này đã kê thuốc này chưa để cộng dồn
+        existing_item = ChiTietToaThuoc.query.filter_by(
+            ToaThuocId=toa_thuoc_id,
+            ThuocId=thuoc_id
+        ).first()
+        so_luong_da_ke = existing_item.SoLuong if existing_item else 0
+        # 3. Lấy tồn kho thực tế
+        # Lưu ý: Hàm này trả về list tuple, cần tìm đúng thuốc
+        available_list = dao.get_available_medicines()
+        selected_med = next((item for item in available_list if item[0].id == thuoc_id), None)
+        if not selected_med:
+            return "Thuốc không hợp lệ", 400
+        real_stock = selected_med.total_stock
+        # 4. KIỂM TRA LOGIC: Tổng (Đã kê + Mới) không được vượt quá Tồn kho
+        total_request = so_luong_da_ke + so_luong_moi
+        if total_request > real_stock:
+            flash(f"Kho chỉ còn {real_stock}. Trong toa đã có {so_luong_da_ke}, thêm {so_luong_moi} nữa là quá tải!",
+                  "error")
+            return redirect(url_for('medicine_page'))
+        # 5. Lưu vào DB (Nếu đã có thì cập nhật cộng dồn, chưa có thì thêm mới)
+        if existing_item:
+            existing_item.SoLuong += so_luong_moi
+            existing_item.ThanhTien = existing_item.SoLuong * selected_med[0].GiaBan
+            # Cập nhật các trường khác nếu cần
+        else:
+            new_detail = ChiTietToaThuoc(
+                ToaThuocId=toa_thuoc_id,
+                ThuocId=thuoc_id,
+                LieuDung=lieu_dung,
+                SoNgay=so_ngay,
+                SoLuong=so_luong_moi,
+                GhiChu=ghi_chu,
+                ThanhTien=so_luong_moi * selected_med[0].GiaBan
+            )
+            db.session.add(new_detail)
+        db.session.commit()
+        flash("Đã thêm vào bảng kê (Chưa trừ kho).", "success")
+        return redirect(url_for('medicine_page', phieu_id=current_toa.PhieuDieuTriId))
+    except Exception as e:
+        db.session.rollback()
+        print(e)
+        return "Lỗi hệ thống", 500
 
 
-@app.route("/medicine/delete/<int:item_id>", methods=["POST"])
-def medicine_delete(item_id):
-    global medicines
-    medicines = [m for m in medicines if m["id"] != item_id]
-    return redirect('/medicine')
+@app.route("/medicine/delete/<int:thuoc_id>", methods=["POST"])
+def medicine_delete(thuoc_id):
+    try:
+        toa_thuoc_id = request.form.get("toa_thuoc_id")
+        current_toa = dao.get_toa_thuoc_by_id(toa_thuoc_id)
+        detail = ChiTietToaThuoc.query.filter_by(ToaThuocId=toa_thuoc_id, ThuocId=thuoc_id).first()
+        if detail:
+            db.session.delete(detail)
+            db.session.commit()
+            flash("Đã xóa khỏi bảng kê.", "info")
+            # KHÔNG GỌI dao.restore_stock VÌ CHƯA TRỪ
+        return redirect(url_for('medicine_page', phieu_id=current_toa.PhieuDieuTriId))
+    except Exception as e:
+        print(e)
+        return "Lỗi xóa", 500
+
+
+@app.route("/medicine/save", methods=["POST"])
+def medicine_save():
+    try:
+        # Lấy ID toa thuốc từ form
+        toa_thuoc_id = request.form.get("toa_thuoc_id")
+        # Lấy thông tin toa thuốc để biết nó thuộc Phiếu điều trị nào
+        toa_thuoc = ToaThuoc.query.get(int(toa_thuoc_id))
+        if not toa_thuoc:
+            return "Lỗi: Không tìm thấy toa thuốc", 404
+        # 1. TRỪ KHO (Logic cũ của bạn)
+        details = toa_thuoc.ds_chi_tiet_thuoc
+        for item in details:
+            # Gọi hàm trừ kho FIFO (đảm bảo hàm này trong dao.py trả về True/False)
+            stock_ok = dao.deduct_stock_fifo(item.ThuocId, item.SoLuong)
+            if not stock_ok:
+                db.session.rollback()
+                flash(f"Lỗi: Thuốc {item.loai_thuoc.TenThuoc} không đủ tồn kho!", "danger")
+                return redirect(url_for('medicine_page', phieu_id=toa_thuoc.PhieuDieuTriId))
+        # 2. TẠO HÓA ĐƠN NHÁP (Logic MỚI)
+        # Gọi hàm tạo hóa đơn cho phiếu điều trị tương ứng
+        dao.create_draft_invoice(toa_thuoc.PhieuDieuTriId)
+        # 3. Commit tất cả thay đổi (Trừ kho + Tạo hóa đơn)
+        db.session.commit()
+        flash("Đã lưu toa thuốc và chuyển sang bộ phận thu ngân!", "success")
+        # Chuyển hướng về danh sách phiếu khám hoặc trang dashboard
+        return redirect(url_for('dashboard'))  # Hoặc trang nào bạn muốn
+    except Exception as e:
+        db.session.rollback()
+        print(f"Lỗi: {e}")
+        flash("Có lỗi xảy ra khi lưu toa thuốc.", "danger")
+        return redirect(request.referrer)
 
 
 # ------------------- Appointment -------------------
@@ -244,7 +357,6 @@ def appointment():
         time = request.form.get("time")  # Ví dụ: '09:30'
         dentist_id = request.form.get("dentist")  # ID bác sĩ
         service_id = request.form.get("service")
-
         # 2. KIỂM TRA TRÙNG LỊCH (Logic quan trọng nhất)
         # Tìm xem trong DB đã có lịch nào của Bác sĩ này + Ngày này + Giờ này chưa
         lich_trung = LichKham.query.filter(
@@ -252,20 +364,13 @@ def appointment():
             LichKham.NgayKham == day,
             LichKham.GioKham == time
         ).first()
-
         if lich_trung:
             # 3a. Nếu trùng: Báo lỗi và không lưu
             flash(f"Bác sĩ đã có lịch hẹn vào lúc {time} ngày {day}. Vui lòng chọn giờ khác!", "danger")
             # Tải lại trang để người dùng chọn lại
             return redirect("/MakeAppointment")  # Hoặc render_template lại
-
         else:
-            # 3b. Nếu không trùng: Tiến hành lưu
             try:
-                # Tạo đối tượng khách hàng (nếu chưa có logic đăng nhập)
-                # Hoặc lấy current_user.id nếu đã đăng nhập
-
-                # Tạo lịch hẹn mới
                 new_appointment = LichKham(
                     KhachHangId=current_user.id,  # Giả sử đang dùng flask_login
                     NhaSiId=dentist_id,
@@ -275,16 +380,13 @@ def appointment():
                 )
                 db.session.add(new_appointment)
                 db.session.commit()
-
                 flash("Đặt lịch thành công!", "success")
                 return redirect('/')
-
             except Exception as e:
                 db.session.rollback()
                 print(e)
                 flash("Có lỗi xảy ra khi lưu dữ liệu.", "danger")
                 return redirect("/MakeAppointment")
-
     return render_template("MakeAppointment.html")
 
 
@@ -294,66 +396,52 @@ def get_user(user_id):
 
 
 # ------------------- Cashier / Bills -------------------
-BILLS_FILE = os.path.join(DATA_DIR, "bills.json")
-
-
-def load_bills():
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-    if not os.path.exists(BILLS_FILE):
-        with open(BILLS_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f)
-    with open(BILLS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def save_bills(bills):
-    with open(BILLS_FILE, "w", encoding="utf-8") as f:
-        json.dump(bills, f, ensure_ascii=False, indent=2)
-
-
 @app.route("/cashier", methods=["GET", "POST"])
+@login_required  # Đảm bảo người dùng đã đăng nhập
 def cashier_page():
+    unpaid_bills = dao.get_unpaid_bills()
+    bill_details = None
     if request.method == "POST":
-        name = request.form.get("patient_name", "Khách")
-        selected_treat_ids = request.form.getlist("treat_ids")
-        selected_med_ids = request.form.getlist("med_ids")
+        action = request.form.get("action")
+        phieu_id = request.form.get("phieu_id")
+        if phieu_id:
+            bill_details = dao.get_bill_details(phieu_id)
+            if action == "pay" and bill_details:
+                try:
+                    # LẤY ID CỦA KẾ TOÁN ĐANG ĐĂNG NHẬP
+                    # current_user là object TaiKhoan, ta lấy NguoiDungId của nó
+                    ke_toan_id = current_user.NguoiDungId
+                    # GỌI HÀM DAO VỚI ID KẾ TOÁN
+                    dao.save_payment(
+                        phieu_id=phieu_id,
+                        tong_tien=bill_details['tong_cong'],
+                        ke_toan_id=ke_toan_id
+                    )
+                    flash("Thanh toán thành công!", "success")
+                    return redirect(url_for('cashier_page'))  # Load lại trang để reset
+                except Exception as e:
+                    # db.session.rollback() # Thường rollback được xử lý trong DAO nếu cần
+                    print(e)
+                    flash("Lỗi hệ thống: " + str(e), "error")
+    # ... (Phần logic GET hiển thị chi tiết khi chưa bấm pay)
+    # Nếu request là POST nhưng action không phải pay (ví dụ xem chi tiết)
+    if request.method == "POST" and request.form.get("phieu_id"):
+        bill_details = dao.get_bill_details(request.form.get("phieu_id"))
+    return render_template("cashier.html", unpaid_bills=unpaid_bills, bill=bill_details)
 
-        selected_treats = [t for t in treatments if str(t["id"]) in selected_treat_ids]
-        selected_medicines = [m for m in medicines if str(m["id"]) in selected_med_ids]
 
-        total_treat = sum(t.get("cost", 0) for t in selected_treats)
-        total_med = sum(m.get("price", 0) for m in selected_medicines)
-        total = total_treat + total_med
-
-        bill = {
-            "id": int(datetime.now().timestamp()),
-            "patient_name": name,
-            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "treatments": selected_treats,
-            "medicines": selected_medicines,
-            "total": total
-        }
-
-        bills = load_bills()
-        bills.append(bill)
-        save_bills(bills)
-
-        return render_template("receipt.html", bill=bill)
-
-    return render_template("cashier.html", treatments=treatments, medicines=medicines)
 @app.route("/profile")
 def profile():
     if not current_user.is_authenticated:
         return redirect("/login")
     return render_template("profile.html", user=current_user)
+
+
 @app.route("/profile/update", methods=["POST"])
 def profile_update():
     if not current_user.is_authenticated:
         return redirect("/login")
-
     user = current_user
-
     # Lấy dữ liệu từ form
     user.nguoi_dung.HoVaTen = request.form.get("HoVaTen")
     user.nguoi_dung.GioiTinh = request.form.get("GioiTinh")
@@ -361,7 +449,6 @@ def profile_update():
     if ngay_sinh:
         user.nguoi_dung.NgaySinh = datetime.strptime(ngay_sinh, "%Y-%m-%d").date()
     user.nguoi_dung.SDT = request.form.get("SDT")
-
     # Xử lý upload avatar nếu có
     avatar_file = request.files.get("Avatar")
     if avatar_file and avatar_file.filename != "":
@@ -369,30 +456,27 @@ def profile_update():
         avatar_path = os.path.join("static", "uploads", filename)
         avatar_file.save(avatar_path)
         user.Avatar = "/" + avatar_path.replace("\\", "/")  # Đường dẫn URL
-
     try:
         db.session.commit()
         flash("Cập nhật thông tin thành công!", "success")
     except:
         db.session.rollback()
         flash("Có lỗi xảy ra, vui lòng thử lại.", "danger")
-
     return redirect("/profile")
+
 
 @app.route("/admin")
 def admin_dashboard():
     if not current_user.is_authenticated or current_user.Role != UserRole.ADMIN:
         return redirect("/login")
-
     # 1. Tổng số nhân sự
     total_doctors = NhaSi.query.filter_by(active=True).count()
     total_patients = KhachHang.query.filter_by(active=True).count()
     total_accountants = KeToan.query.filter_by(active=True).count()
-
     # 2. Lịch hẹn
     today = datetime.today().date()
     week_num = today.isocalendar()[1]
-    appointments_today = LichKham.query.filter(LichKham.NgayKham==today).count()
+    appointments_today = LichKham.query.filter(LichKham.NgayKham == today).count()
     appointments_week = LichKham.query.filter(
         extract('week', LichKham.NgayKham) == week_num,
         extract('year', LichKham.NgayKham) == today.year
@@ -401,34 +485,30 @@ def admin_dashboard():
         extract('month', LichKham.NgayKham) == today.month,
         extract('year', LichKham.NgayKham) == today.year
     ).count()
-
     # 3. Hóa đơn và doanh thu (fix join với DichVu)
     revenue_today = db.session.query(
         func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
     ).join(PhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
-     .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
-     .filter(PhieuDieuTri.created_date == today).scalar() or 0
-
+                        .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+                        .filter(PhieuDieuTri.created_date == today).scalar() or 0
     revenue_week = db.session.query(
         func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
     ).join(PhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
-     .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
-     .filter(
+                       .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+                       .filter(
         extract('week', PhieuDieuTri.created_date) == week_num,
         extract('year', PhieuDieuTri.created_date) == today.year
     ).scalar() or 0
-
     revenue_month = db.session.query(
         func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
     ).join(PhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
-     .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
-     .filter(
+                        .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+                        .filter(
         extract('month', PhieuDieuTri.created_date) == today.month,
         extract('year', PhieuDieuTri.created_date) == today.year
     ).scalar() or 0
-
     # Số hóa đơn
-    bills_today = PhieuDieuTri.query.filter(PhieuDieuTri.created_date==today).count()
+    bills_today = PhieuDieuTri.query.filter(PhieuDieuTri.created_date == today).count()
     bills_week = PhieuDieuTri.query.filter(
         extract('week', PhieuDieuTri.created_date) == week_num,
         extract('year', PhieuDieuTri.created_date) == today.year
@@ -437,21 +517,18 @@ def admin_dashboard():
         extract('month', PhieuDieuTri.created_date) == today.month,
         extract('year', PhieuDieuTri.created_date) == today.year
     ).count()
-
     # 4. Dịch vụ phổ biến
     popular_services = db.session.query(
         DichVu.TenDichVu, func.count(ChiTietPhieuDieuTri.DichVuId)
     ).join(ChiTietPhieuDieuTri, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
-     .group_by(DichVu.TenDichVu) \
-     .order_by(func.count(ChiTietPhieuDieuTri.DichVuId).desc()).limit(10).all()
-
+        .group_by(DichVu.TenDichVu) \
+        .order_by(func.count(ChiTietPhieuDieuTri.DichVuId).desc()).limit(10).all()
     # 5. Thuốc bán chạy
     top_medicines = db.session.query(
         Thuoc.TenThuoc, func.sum(ChiTietToaThuoc.SoLuong)
     ).join(ChiTietToaThuoc, ChiTietToaThuoc.ThuocId == Thuoc.id) \
-     .group_by(Thuoc.TenThuoc) \
-     .order_by(func.sum(ChiTietToaThuoc.SoLuong).desc()).limit(10).all()
-
+        .group_by(Thuoc.TenThuoc) \
+        .order_by(func.sum(ChiTietToaThuoc.SoLuong).desc()).limit(10).all()
     # Thuốc tồn kho thấp
     low_stock_medicines = LoThuoc.query.filter(LoThuoc.SoLuongTon <= 10).all()
 
@@ -472,52 +549,121 @@ def admin_dashboard():
         "top_medicines": top_medicines,
         "low_stock_medicines": low_stock_medicines
     }
-
     return render_template("Admin/admin.html", stats=stats)
+
+
+# --- API CHO BIỂU ĐỒ (BẮT BUỘC PHẢI CÓ) ---
+@app.route("/admin/api/revenue-chart", methods=["POST"])
+@login_required
+def get_revenue_chart_data():
+    # Kiểm tra quyền Admin
+    if current_user.Role != UserRole.ADMIN:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    filter_type = request.form.get("filter")  # Lấy loại lọc (month/doctor) từ HTML gửi lên
+    labels = []
+    data = []
+    label_text = ""
+    current_year = datetime.now().year
+
+    try:
+        if filter_type == "doctor":
+            # --- LỌC THEO BÁC SĨ ---
+            # Tính tổng tiền dịch vụ mà bác sĩ đã làm
+            results = db.session.query(
+                NhaSi.HoVaTen,
+                func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
+            ).join(PhieuDieuTri, PhieuDieuTri.NhaSiId == NhaSi.id) \
+                .join(ChiTietPhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
+                .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+                .group_by(NhaSi.HoVaTen).all()
+
+            label_text = "Doanh thu theo Bác sĩ (Dịch vụ)"
+            for row in results:
+                name = row[0] if row[0] else "Unknown"
+                total = float(row[1]) if row[1] else 0
+                labels.append(name)
+                data.append(total)
+
+        elif filter_type == "month":
+            # --- LỌC THEO THÁNG ---
+            # Tính tổng tiền theo tháng trong năm nay
+            results = db.session.query(
+                extract('month', PhieuDieuTri.created_date).label('thang'),
+                func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
+            ).join(ChiTietPhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
+                .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+                .filter(extract('year', PhieuDieuTri.created_date) == current_year) \
+                .group_by(extract('month', PhieuDieuTri.created_date)) \
+                .order_by(extract('month', PhieuDieuTri.created_date)).all()
+
+            label_text = f"Doanh thu theo Tháng (Năm {current_year})"
+
+            # Khởi tạo dữ liệu 12 tháng bằng 0
+            revenue_by_month = {m: 0 for m in range(1, 13)}
+
+            # Gán dữ liệu tìm được vào danh sách
+            for row in results:
+                month = int(row[0])
+                total = float(row[1])
+                revenue_by_month[month] = total
+
+            labels = [f"Tháng {m}" for m in range(1, 13)]
+            data = [revenue_by_month[m] for m in range(1, 13)]
+
+        # Trả về JSON cho JavaScript vẽ
+        return jsonify({
+            "labels": labels,
+            "data": data,
+            "label_text": label_text
+        })
+    except Exception as e:
+        print("Lỗi API Biểu đồ:", e)
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/admin/users/staff")
 def admin_staff():
     if not current_user.is_authenticated or current_user.Role != UserRole.ADMIN:
         return redirect("/login")
-
     doctors = NhaSi.query.filter_by(active=True).all()
     accountants = KeToan.query.filter_by(active=True).all()
-
     return render_template(
         "Admin/admin_staff.html",
         doctors=doctors,
         accountants=accountants
     )
+
+
 @app.route("/admin/users/customers")
 def admin_customers():
     if not current_user.is_authenticated or current_user.Role != UserRole.ADMIN:
         return redirect("/login")
-
     customers = KhachHang.query.filter_by(active=True).all()
-
     return render_template(
         "Admin/admin_customers.html",
         customers=customers
     )
+
 
 @app.route('/admin/services')
 @login_required
 def admin_services():
     if current_user.Role != UserRole.ADMIN:
         return "Unauthorized", 403
-
     services = DichVu.query.all()
     return render_template('admin/services.html', services=services)
+
+
 @app.route("/admin/services/add", methods=["GET", "POST"])
 @login_required
 def admin_add_service():
     if current_user.Role != UserRole.ADMIN:
         return "Unauthorized", 403
-
     if request.method == "POST":
         ten = request.form.get("TenDichVu")
         chiphi = request.form.get("ChiPhi")
         mota = request.form.get("MoTa")
-
         try:
             dv = DichVu(
                 TenDichVu=ten,
@@ -531,21 +677,19 @@ def admin_add_service():
         except Exception as e:
             db.session.rollback()
             flash("Lỗi thêm dịch vụ: " + str(e), "danger")
-
     return render_template("Admin/service_add.html")
+
+
 @app.route("/admin/services/edit/<int:service_id>", methods=["GET", "POST"])
 @login_required
 def admin_edit_service(service_id):
     if current_user.Role != UserRole.ADMIN:
         return "Unauthorized", 403
-
     dv = DichVu.query.get_or_404(service_id)
-
     if request.method == "POST":
         dv.TenDichVu = request.form.get("TenDichVu")
         dv.ChiPhi = float(request.form.get("ChiPhi"))
         dv.MoTa = request.form.get("MoTa")
-
         try:
             db.session.commit()
             flash("Cập nhật dịch vụ thành công!", "success")
@@ -553,22 +697,20 @@ def admin_edit_service(service_id):
         except Exception as e:
             db.session.rollback()
             flash("Lỗi cập nhật: " + str(e), "danger")
-
     return render_template("Admin/service_edit.html", dv=dv)
+
+
 @app.route("/admin/services/delete/<int:service_id>")
 @login_required
 def admin_delete_service(service_id):
     if current_user.Role != UserRole.ADMIN:
         return "Unauthorized", 403
-
     dv = DichVu.query.get_or_404(service_id)
-
     # Kiểm tra dịch vụ đã được dùng chưa
     used = ChiTietPhieuDieuTri.query.filter_by(DichVuId=service_id).first()
     if used:
         flash("Không thể xóa! Dịch vụ đã được sử dụng.", "danger")
         return redirect("/admin/services")
-
     try:
         db.session.delete(dv)
         db.session.commit()
@@ -576,28 +718,28 @@ def admin_delete_service(service_id):
     except Exception as e:
         db.session.rollback()
         flash("Lỗi xóa dịch vụ: " + str(e), "danger")
-
     return redirect("/admin/services")
+
+
 @app.route("/admin/lo-thuoc")
 @login_required
 def admin_lo_thuoc():
     if current_user.Role.name != "ADMIN":
         return redirect("/")
-
     lo_thuoc = LoThuoc.query.all()
     return render_template("admin/lo_thuoc.html", lo_thuoc=lo_thuoc)
+
+
 @app.route("/admin/lo-thuoc/add", methods=["POST"])
 @login_required
 def add_lo_thuoc():
     if current_user.Role.name != "ADMIN":
         return redirect("/")
-
     ma_lo = request.form.get("ma_lo_thuoc")
     thuoc_id = request.form.get("thuoc_id")
     so_luong_nhap = request.form.get("so_luong_nhap")
     so_luong_ton = request.form.get("so_luong_ton")
     han_su_dung = request.form.get("han_su_dung")
-
     lo = LoThuoc(
         MaLoThuoc=ma_lo,
         ThuocId=thuoc_id,
@@ -605,59 +747,55 @@ def add_lo_thuoc():
         SoLuongTon=so_luong_ton,
         HanSuDung=datetime.strptime(han_su_dung, "%Y-%m-%d") if han_su_dung else None
     )
-
     db.session.add(lo)
     db.session.commit()
-
     return redirect("/admin/lo-thuoc")
+
+
 @app.route("/admin/lo-thuoc/delete/<string:ma_lo>")
 @login_required
 def delete_lo_thuoc(ma_lo):
     if current_user.Role.name != "ADMIN":
         return redirect("/")
-
     lo = LoThuoc.query.get(ma_lo)
     if lo:
         db.session.delete(lo)
         db.session.commit()
-
     return redirect("/admin/lo-thuoc")
+
+
 @app.route("/admin/accounts")
 @login_required
 def admin_accounts():
     if current_user.Role != UserRole.ADMIN:
         return redirect("/")
-
     accounts = TaiKhoan.query.all()
     nguoidung_chua_co_tk = NguoiDung.query.filter(~NguoiDung.id.in_(
         db.session.query(TaiKhoan.NguoiDungId)
     )).all()
-
     return render_template(
         "Admin/admin_accounts.html",
         accounts=accounts,
         nguoidung_chua_co_tk=nguoidung_chua_co_tk
     )
+
+
 @app.route("/admin/accounts/add", methods=["POST"])
 @login_required
 def admin_add_account():
     if current_user.Role != UserRole.ADMIN:
         return redirect("/")
-
     nguoidung_id = request.form.get("nguoidung_id")
     email = request.form.get("email")
     password = request.form.get("password")
     role = request.form.get("role")
-
     hashed = hashlib.md5(password.encode("utf-8")).hexdigest()
-
     tk = TaiKhoan(
         NguoiDungId=nguoidung_id,
         Email=email,
         MatKhau=hashed,
         Role=UserRole[role]
     )
-
     try:
         db.session.add(tk)
         db.session.commit()
@@ -665,16 +803,15 @@ def admin_add_account():
     except Exception as e:
         db.session.rollback()
         flash("Lỗi thêm tài khoản: " + str(e), "danger")
-
     return redirect("/admin/accounts")
+
+
 @app.route("/admin/accounts/delete/<int:account_id>")
 @login_required
 def admin_delete_account(account_id):
     if current_user.Role != UserRole.ADMIN:
         return redirect("/")
-
     tk = TaiKhoan.query.get_or_404(account_id)
-
     try:
         db.session.delete(tk)
         db.session.commit()
@@ -682,8 +819,8 @@ def admin_delete_account(account_id):
     except Exception as e:
         db.session.rollback()
         flash("Không thể xóa tài khoản: " + str(e), "danger")
-
     return redirect("/admin/accounts")
+
 
 if __name__ == "__main__":
     app.run(debug=True)

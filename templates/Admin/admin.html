@@ -6,6 +6,9 @@
 {% include 'layout/header.html' %}
 <!-- Liên kết CSS riêng cho Admin -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<script src="{{ url_for('static', filename='js/bar_chart.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -106,18 +109,18 @@
         <h4 class="mt-4">Dịch vụ phổ biến</h4>
         <table class="table table-striped">
             <thead>
-                <tr>
-                    <th>Tên dịch vụ</th>
-                    <th>Số lần sử dụng</th>
-                </tr>
+            <tr>
+                <th>Tên dịch vụ</th>
+                <th>Số lần sử dụng</th>
+            </tr>
             </thead>
             <tbody>
-                {% for svc, count in stats.popular_services %}
-                <tr>
-                    <td>{{ svc }}</td>
-                    <td>{{ count }}</td>
-                </tr>
-                {% endfor %}
+            {% for svc, count in stats.popular_services %}
+            <tr>
+                <td>{{ svc }}</td>
+                <td>{{ count }}</td>
+            </tr>
+            {% endfor %}
             </tbody>
         </table>
 
@@ -125,18 +128,18 @@
         <h4 class="mt-4">Thuốc bán chạy</h4>
         <table class="table table-striped">
             <thead>
-                <tr>
-                    <th>Tên thuốc</th>
-                    <th>Số lượng đã bán</th>
-                </tr>
+            <tr>
+                <th>Tên thuốc</th>
+                <th>Số lượng đã bán</th>
+            </tr>
             </thead>
             <tbody>
-                {% for med, sold in stats.top_medicines %}
-                <tr>
-                    <td>{{ med }}</td>
-                    <td>{{ sold }}</td>
-                </tr>
-                {% endfor %}
+            {% for med, sold in stats.top_medicines %}
+            <tr>
+                <td>{{ med }}</td>
+                <td>{{ sold }}</td>
+            </tr>
+            {% endfor %}
             </tbody>
         </table>
 
@@ -144,23 +147,38 @@
         <h4 class="mt-4 text-danger">Thuốc tồn kho thấp (≤10)</h4>
         <table class="table table-striped">
             <thead>
-                <tr>
-                    <th>Mã lô</th>
-                    <th>Tên thuốc</th>
-                    <th>Số lượng tồn</th>
-                </tr>
+            <tr>
+                <th>Mã lô</th>
+                <th>Tên thuốc</th>
+                <th>Số lượng tồn</th>
+            </tr>
             </thead>
             <tbody>
-                {% for lot in stats.low_stock_medicines %}
-                <tr>
-                    <td>{{ lot.MaLoThuoc }}</td>
-                    <td>{{ lot.loai_thuoc.TenThuoc }}</td>
-                    <td>{{ lot.SoLuongTon }}</td>
-                </tr>
-                {% endfor %}
+            {% for lot in stats.low_stock_medicines %}
+            <tr>
+                <td>{{ lot.MaLoThuoc }}</td>
+                <td>{{ lot.loai_thuoc.TenThuoc }}</td>
+                <td>{{ lot.SoLuongTon }}</td>
+            </tr>
+            {% endfor %}
             </tbody>
         </table>
 
+    </div>
+</div>
+
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="m-0 font-weight-bold text-primary">Biểu đồ doanh thu</h5>
+        <select id="chartFilter" class="form-control w-25" onchange="loadChartData()">
+            <option value="month">Theo Tháng (Năm nay)</option>
+            <option value="doctor">Theo Bác sĩ</option>
+        </select>
+    </div>
+    <div class="card-body">
+        <div style="height: 80vh;">
+            <canvas id="revenueChart"></canvas>
+        </div>
     </div>
 </div>
 {% endblock %}
