@@ -116,15 +116,18 @@ def login_my_user():
 
     return render_template("login.html", err_msg=err_msg)
 
+
 @app.route('/logout')
 def logout_my_user():
     logout_user()
     return redirect('/')
 
+
 @app.route("/dashboard")
 def dashboard():
     username = current_user.nguoi_dung.HoVaTen
     return render_template("dashboard.html", username=username)
+
 
 # ------------------- Treatment -------------------
 @app.route("/treatment/create", methods=["GET", "POST"])
@@ -149,6 +152,7 @@ def create_treatment():
             db.session.rollback()
             flash("Lỗi khi tạo phiếu: " + str(e), "danger")
     return render_template("treatment.html", username=username, den_cus=den_cus)
+
 
 # --- ROUTE 2: CHI TIẾT PHIẾU & THÊM DỊCH VỤ (Bước 2) ---
 @app.route("/treatment/detail/<int:phieu_id>", methods=["GET", "POST"])
@@ -192,6 +196,7 @@ def treatment_detail(phieu_id):
                            services=ds_dich_vu,
                            details=ds_chi_tiet)
 
+
 @app.route("/treatment/delete-detail/<int:phieu_id>/<int:dich_vu_id>", methods=["POST"])
 def delete_treatment_detail(phieu_id, dich_vu_id):
     chi_tiet = ChiTietPhieuDieuTri.query.get_or_404((phieu_id, dich_vu_id))
@@ -204,6 +209,7 @@ def delete_treatment_detail(phieu_id, dich_vu_id):
         flash("Lỗi khi xóa: " + str(e), "danger")
     # Redirect về lại trang chi tiết phiếu
     return redirect(url_for('treatment_detail', phieu_id=phieu_id))
+
 
 # ------------------- Medicine -------------------
 @app.route("/medicine")
@@ -232,6 +238,7 @@ def medicine_page(phieu_id=None):
                            toa_thuoc=toa_thuoc,
                            medicines=medicines_data,
                            mode="detail")
+
 
 @app.route("/medicine/add", methods=["POST"])
 def medicine_add():
@@ -282,11 +289,12 @@ def medicine_add():
             db.session.add(new_detail)
         db.session.commit()
         flash("Đã thêm vào bảng kê (Chưa trừ kho).", "success")
-        return redirect(url_for('medicine_page',phieu_id=current_toa.PhieuDieuTriId))
+        return redirect(url_for('medicine_page', phieu_id=current_toa.PhieuDieuTriId))
     except Exception as e:
         db.session.rollback()
         print(e)
         return "Lỗi hệ thống", 500
+
 
 @app.route("/medicine/delete/<int:thuoc_id>", methods=["POST"])
 def medicine_delete(thuoc_id):
@@ -299,10 +307,11 @@ def medicine_delete(thuoc_id):
             db.session.commit()
             flash("Đã xóa khỏi bảng kê.", "info")
             # KHÔNG GỌI dao.restore_stock VÌ CHƯA TRỪ
-        return redirect(url_for('medicine_page',phieu_id=current_toa.PhieuDieuTriId))
+        return redirect(url_for('medicine_page', phieu_id=current_toa.PhieuDieuTriId))
     except Exception as e:
         print(e)
         return "Lỗi xóa", 500
+
 
 @app.route("/medicine/save", methods=["POST"])
 def medicine_save():
@@ -380,6 +389,7 @@ def appointment():
                 return redirect("/MakeAppointment")
     return render_template("MakeAppointment.html")
 
+
 @login.user_loader
 def get_user(user_id):
     return dao.get_user_by_id(user_id)
@@ -418,11 +428,14 @@ def cashier_page():
     if request.method == "POST" and request.form.get("phieu_id"):
         bill_details = dao.get_bill_details(request.form.get("phieu_id"))
     return render_template("cashier.html", unpaid_bills=unpaid_bills, bill=bill_details)
+
+
 @app.route("/profile")
 def profile():
     if not current_user.is_authenticated:
         return redirect("/login")
     return render_template("profile.html", user=current_user)
+
 
 @app.route("/profile/update", methods=["POST"])
 def profile_update():
@@ -450,6 +463,7 @@ def profile_update():
         db.session.rollback()
         flash("Có lỗi xảy ra, vui lòng thử lại.", "danger")
     return redirect("/profile")
+
 
 @app.route("/admin")
 def admin_dashboard():
@@ -537,6 +551,77 @@ def admin_dashboard():
     }
     return render_template("Admin/admin.html", stats=stats)
 
+
+# --- API CHO BIỂU ĐỒ (BẮT BUỘC PHẢI CÓ) ---
+@app.route("/admin/api/revenue-chart", methods=["POST"])
+@login_required
+def get_revenue_chart_data():
+    # Kiểm tra quyền Admin
+    if current_user.Role != UserRole.ADMIN:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    filter_type = request.form.get("filter")  # Lấy loại lọc (month/doctor) từ HTML gửi lên
+    labels = []
+    data = []
+    label_text = ""
+    current_year = datetime.now().year
+
+    try:
+        if filter_type == "doctor":
+            # --- LỌC THEO BÁC SĨ ---
+            # Tính tổng tiền dịch vụ mà bác sĩ đã làm
+            results = db.session.query(
+                NhaSi.HoVaTen,
+                func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
+            ).join(PhieuDieuTri, PhieuDieuTri.NhaSiId == NhaSi.id) \
+                .join(ChiTietPhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
+                .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+                .group_by(NhaSi.HoVaTen).all()
+
+            label_text = "Doanh thu theo Bác sĩ (Dịch vụ)"
+            for row in results:
+                name = row[0] if row[0] else "Unknown"
+                total = float(row[1]) if row[1] else 0
+                labels.append(name)
+                data.append(total)
+
+        elif filter_type == "month":
+            # --- LỌC THEO THÁNG ---
+            # Tính tổng tiền theo tháng trong năm nay
+            results = db.session.query(
+                extract('month', PhieuDieuTri.created_date).label('thang'),
+                func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
+            ).join(ChiTietPhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
+                .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+                .filter(extract('year', PhieuDieuTri.created_date) == current_year) \
+                .group_by(extract('month', PhieuDieuTri.created_date)) \
+                .order_by(extract('month', PhieuDieuTri.created_date)).all()
+
+            label_text = f"Doanh thu theo Tháng (Năm {current_year})"
+
+            # Khởi tạo dữ liệu 12 tháng bằng 0
+            revenue_by_month = {m: 0 for m in range(1, 13)}
+
+            # Gán dữ liệu tìm được vào danh sách
+            for row in results:
+                month = int(row[0])
+                total = float(row[1])
+                revenue_by_month[month] = total
+
+            labels = [f"Tháng {m}" for m in range(1, 13)]
+            data = [revenue_by_month[m] for m in range(1, 13)]
+
+        # Trả về JSON cho JavaScript vẽ
+        return jsonify({
+            "labels": labels,
+            "data": data,
+            "label_text": label_text
+        })
+    except Exception as e:
+        print("Lỗi API Biểu đồ:", e)
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/admin/users/staff")
 def admin_staff():
     if not current_user.is_authenticated or current_user.Role != UserRole.ADMIN:
@@ -549,6 +634,7 @@ def admin_staff():
         accountants=accountants
     )
 
+
 @app.route("/admin/users/customers")
 def admin_customers():
     if not current_user.is_authenticated or current_user.Role != UserRole.ADMIN:
@@ -559,6 +645,7 @@ def admin_customers():
         customers=customers
     )
 
+
 @app.route('/admin/services')
 @login_required
 def admin_services():
@@ -566,6 +653,7 @@ def admin_services():
         return "Unauthorized", 403
     services = DichVu.query.all()
     return render_template('admin/services.html', services=services)
+
 
 @app.route("/admin/services/add", methods=["GET", "POST"])
 @login_required
@@ -591,6 +679,7 @@ def admin_add_service():
             flash("Lỗi thêm dịch vụ: " + str(e), "danger")
     return render_template("Admin/service_add.html")
 
+
 @app.route("/admin/services/edit/<int:service_id>", methods=["GET", "POST"])
 @login_required
 def admin_edit_service(service_id):
@@ -609,6 +698,7 @@ def admin_edit_service(service_id):
             db.session.rollback()
             flash("Lỗi cập nhật: " + str(e), "danger")
     return render_template("Admin/service_edit.html", dv=dv)
+
 
 @app.route("/admin/services/delete/<int:service_id>")
 @login_required
@@ -630,6 +720,7 @@ def admin_delete_service(service_id):
         flash("Lỗi xóa dịch vụ: " + str(e), "danger")
     return redirect("/admin/services")
 
+
 @app.route("/admin/lo-thuoc")
 @login_required
 def admin_lo_thuoc():
@@ -637,6 +728,7 @@ def admin_lo_thuoc():
         return redirect("/")
     lo_thuoc = LoThuoc.query.all()
     return render_template("admin/lo_thuoc.html", lo_thuoc=lo_thuoc)
+
 
 @app.route("/admin/lo-thuoc/add", methods=["POST"])
 @login_required
@@ -659,6 +751,7 @@ def add_lo_thuoc():
     db.session.commit()
     return redirect("/admin/lo-thuoc")
 
+
 @app.route("/admin/lo-thuoc/delete/<string:ma_lo>")
 @login_required
 def delete_lo_thuoc(ma_lo):
@@ -669,6 +762,7 @@ def delete_lo_thuoc(ma_lo):
         db.session.delete(lo)
         db.session.commit()
     return redirect("/admin/lo-thuoc")
+
 
 @app.route("/admin/accounts")
 @login_required
@@ -684,6 +778,7 @@ def admin_accounts():
         accounts=accounts,
         nguoidung_chua_co_tk=nguoidung_chua_co_tk
     )
+
 
 @app.route("/admin/accounts/add", methods=["POST"])
 @login_required
@@ -710,6 +805,7 @@ def admin_add_account():
         flash("Lỗi thêm tài khoản: " + str(e), "danger")
     return redirect("/admin/accounts")
 
+
 @app.route("/admin/accounts/delete/<int:account_id>")
 @login_required
 def admin_delete_account(account_id):
@@ -724,6 +820,7 @@ def admin_delete_account(account_id):
         db.session.rollback()
         flash("Không thể xóa tài khoản: " + str(e), "danger")
     return redirect("/admin/accounts")
+
 
 if __name__ == "__main__":
     app.run(debug=True)

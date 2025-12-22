@@ -7,7 +7,7 @@
     <form action="/register" method="POST">
         <input type="text" name="name" placeholder="Họ và tên" required>
         <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Mật khẩu" required>
+        <input type="password" name="password" minlength="8" placeholder="Mật khẩu" required>
         <input type="password" name="confirm" placeholder="Xác nhận mật khẩu" required>
         <button type="submit">Đăng Ký</button>
     </form>
