@@ -7,4 +7,8 @@ html, body {
             font-family: Arial, sans-serif;
             background: url("/static/images/medical_bg.jpg") center/cover no-repeat fixed;
         }
+        footer {
+            bottom:0;
+            width:100%
+        }
 

@@ -12,7 +12,7 @@ from flask import Flask, render_template, request, redirect, session, url_for, f
 from __init__ import app, login, db  # , admin
 from flask_login import login_user, current_user, logout_user, login_required
 from datetime import datetime
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, or_
 from models import TaiKhoan, GioiTinh, UserRole, NhaSi, KhachHang, KeToan, LichKham, PhieuDieuTri, ChiTietPhieuDieuTri, \
     DichVu, Thuoc, LoThuoc, ChiTietToaThuoc, NguoiDung, ToaThuoc, HoaDon
 
@@ -220,29 +220,36 @@ def delete_treatment_detail(phieu_id, dich_vu_id):
 
 
 # ------------------- Medicine -------------------
-# app.py
+@app.route("/medicine")
+@app.route("/medicine/<int:phieu_id>")
+def medicine_page(phieu_id=None):
+    # TRƯỜNG HỢP 1: Chưa có ID -> Hiện danh sách để chọn
+    if phieu_id is None:
+        # SỬA LỖI: Model PhieuDieuTri không có NgayKham, nên sort theo ID giảm dần
+        ds_phieu = PhieuDieuTri.query.outerjoin(HoaDon).filter(
+            or_(
+                HoaDon.id == None,  # Chưa tạo hóa đơn
+                HoaDon.DaThanhToan == False  # Có hóa đơn nhưng chưa trả tiền
+            )
+        ).order_by(PhieuDieuTri.id.desc()).all()
 
-@app.route("/medicine/<int:phieu_id>")  # Nhận ID phiếu điều trị từ URL
-def medicine_page(phieu_id):
-    # 1. Kiểm tra xem phiếu điều trị này đã có toa thuốc chưa
-    # (Dựa trên quan hệ 1-1 hoặc 1-n trong Model của bạn)
+        return render_template("medicine.html",
+                               ds_phieu=ds_phieu,
+                               mode="select")
+
+    # TRƯỜNG HỢP 2: Đã có ID -> Kê thuốc
     toa_thuoc = ToaThuoc.query.filter_by(PhieuDieuTriId=phieu_id).first()
-
-    # 2. Nếu chưa có thì TẠO MỚI ngay lập tức
     if not toa_thuoc:
         toa_thuoc = ToaThuoc(PhieuDieuTriId=phieu_id)
         db.session.add(toa_thuoc)
         db.session.commit()
-        # Lúc này toa_thuoc.id đã được sinh ra tự động
 
-    # 3. Lấy danh sách thuốc trong kho (để hiện Dropdown chọn)
     medicines_data = dao.get_available_medicines()
 
-    # 4. Lấy danh sách thuốc ĐÃ KÊ trong toa này (để hiện Bảng bên dưới)
-    # Lưu ý: Truyền đúng biến toa_thuoc object sang HTML
     return render_template("medicine.html",
-                           toa_thuoc=toa_thuoc,  # Truyền object ToaThuoc sang
-                           medicines=medicines_data)
+                           toa_thuoc=toa_thuoc,
+                           medicines=medicines_data,
+                           mode="detail")
 
 
 @app.route("/medicine/add", methods=["POST"])
