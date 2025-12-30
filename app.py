@@ -611,37 +611,75 @@ def admin_dashboard():
         "low_stock_medicines": low_stock_medicines
     }
 
-    return render_template("Admin/admin.html", stats=stats)
 
+# --- API CHO BIỂU ĐỒ (BẮT BUỘC PHẢI CÓ) ---
+@app.route("/admin/api/revenue-chart", methods=["POST"])
+@login_required
+def get_revenue_chart_data():
+    # Kiểm tra quyền Admin
+    if current_user.Role != UserRole.ADMIN:
+        return jsonify({"error": "Unauthorized"}), 403
 
-@app.route("/admin/users/staff")
-def admin_staff():
-    if not current_user.is_authenticated or current_user.Role != UserRole.ADMIN:
-        return redirect("/login")
+    filter_type = request.form.get("filter")  # Lấy loại lọc (month/doctor) từ HTML gửi lên
+    labels = []
+    data = []
+    label_text = ""
+    current_year = datetime.now().year
 
-    doctors = NhaSi.query.filter_by(active=True).all()
-    accountants = KeToan.query.filter_by(active=True).all()
+    try:
+        if filter_type == "doctor":
+            # --- LỌC THEO BÁC SĨ ---
+            # Tính tổng tiền dịch vụ mà bác sĩ đã làm
+            results = db.session.query(
+                NhaSi.HoVaTen,
+                func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
+            ).join(PhieuDieuTri, PhieuDieuTri.NhaSiId == NhaSi.id) \
+                .join(ChiTietPhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
+                .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+                .group_by(NhaSi.HoVaTen).all()
 
-    return render_template(
-        "Admin/admin_staff.html",
-        doctors=doctors,
-        accountants=accountants
-    )
+            label_text = "Doanh thu theo Bác sĩ (Dịch vụ)"
+            for row in results:
+                name = row[0] if row[0] else "Unknown"
+                total = float(row[1]) if row[1] else 0
+                labels.append(name)
+                data.append(total)
 
+        elif filter_type == "month":
+            # --- LỌC THEO THÁNG ---
+            # Tính tổng tiền theo tháng trong năm nay
+            results = db.session.query(
+                extract('month', PhieuDieuTri.created_date).label('thang'),
+                func.sum(ChiTietPhieuDieuTri.SoLuong * DichVu.ChiPhi)
+            ).join(ChiTietPhieuDieuTri, ChiTietPhieuDieuTri.PhieuDieuTriId == PhieuDieuTri.id) \
+                .join(DichVu, ChiTietPhieuDieuTri.DichVuId == DichVu.id) \
+                .filter(extract('year', PhieuDieuTri.created_date) == current_year) \
+                .group_by(extract('month', PhieuDieuTri.created_date)) \
+                .order_by(extract('month', PhieuDieuTri.created_date)).all()
 
-@app.route("/admin/users/customers")
-def admin_customers():
-    if not current_user.is_authenticated or current_user.Role != UserRole.ADMIN:
-        return redirect("/login")
+            label_text = f"Doanh thu theo Tháng (Năm {current_year})"
 
-    customers = KhachHang.query.filter_by(active=True).all()
+            # Khởi tạo dữ liệu 12 tháng bằng 0
+            revenue_by_month = {m: 0 for m in range(1, 13)}
 
-    return render_template(
-        "Admin/admin_customers.html",
-        customers=customers
-    )
+            # Gán dữ liệu tìm được vào danh sách
+            for row in results:
+                month = int(row[0])
+                total = float(row[1])
+                revenue_by_month[month] = total
 
+            labels = [f"Tháng {m}" for m in range(1, 13)]
+            data = [revenue_by_month[m] for m in range(1, 13)]
 
+        # Trả về JSON cho JavaScript vẽ
+        return jsonify({
+            "labels": labels,
+            "data": data,
+            "label_text": label_text
+        })
+    except Exception as e:
+        print("Lỗi API Biểu đồ:", e)
+        return jsonify({"error": str(e)}), 500
 @app.route('/admin/services')
 @login_required
 def admin_services():
@@ -795,29 +833,38 @@ def admin_accounts():
         accounts=accounts,
         nguoidung_chua_co_tk=nguoidung_chua_co_tk
     )
-
-
 @app.route("/admin/accounts/add", methods=["POST"])
 @login_required
 def admin_add_account():
     if current_user.Role != UserRole.ADMIN:
         return redirect("/")
 
-    nguoidung_id = request.form.get("nguoidung_id")
+    hoten = request.form.get("hoten")
     email = request.form.get("email")
     password = request.form.get("password")
     role = request.form.get("role")
 
+    # 1. Kiểm tra email đã tồn tại chưa
+    if TaiKhoan.query.filter_by(Email=email).first():
+        flash("Email đã tồn tại!", "danger")
+        return redirect("/admin/accounts")
+
+    # 2. Tạo người dùng mới
+    nguoidung = NguoiDung(HoVaTen=hoten)
+
+    # 3. Mã hóa mật khẩu
     hashed = hashlib.md5(password.encode("utf-8")).hexdigest()
 
+    # 4. Tạo tài khoản
     tk = TaiKhoan(
-        NguoiDungId=nguoidung_id,
         Email=email,
         MatKhau=hashed,
-        Role=UserRole[role]
+        Role=UserRole[role],
+        nguoi_dung=nguoidung
     )
 
     try:
+        db.session.add(nguoidung)
         db.session.add(tk)
         db.session.commit()
         flash("Thêm tài khoản thành công!", "success")
@@ -826,7 +873,6 @@ def admin_add_account():
         flash("Lỗi thêm tài khoản: " + str(e), "danger")
 
     return redirect("/admin/accounts")
-
 
 @app.route("/admin/accounts/delete/<int:account_id>")
 @login_required
