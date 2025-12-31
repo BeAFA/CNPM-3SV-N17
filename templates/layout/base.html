@@ -18,6 +18,16 @@
 {%include 'layout/header.html'%}
 {%endblock%}
 <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
 
     {%block content required%}
 
@@ -25,9 +35,9 @@
     {%endblock%}
 </div>
 <footer>
-{%block footer%}
-{%include 'layout/footer.html'%}
-{%endblock%}
+    {%block footer%}
+    {%include 'layout/footer.html'%}
+    {%endblock%}
 </footer>
 </body>
 </html>

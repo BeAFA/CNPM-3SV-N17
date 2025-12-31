@@ -67,8 +67,8 @@ def register():
                     db.session.add(taikhoan)
                     db.session.add(nguoidung)
                     db.session.commit()
-                    err_msg = "Đăng ký thành công! Vui lòng đăng nhập để tiếp tục!"
-                    return redirect('/login',err_msg=err_msg)
+                    flash("Đăng ký thành công! Vui lòng đăng nhập để tiếp tục!", "success")
+                    return redirect('/login')
                 except:
                     db.session.rollback()
                     err_msg = "Hệ thống đã bị lỗi! Xin vui lòng thử lại sau"
